@@ -228,7 +228,8 @@ exports.googleCallback = async (req, res) => {
     // req.user is set by passport.authenticate
     if (!req.user) {
       // Redirect to login page with error
-      return res.redirect('http://localhost:3000/login?error=auth_failed');
+      const frontendURL = process.env.FRONTEND_URL || 'http://localhost:3000';
+      return res.redirect(`${frontendURL}/login?error=auth_failed`);
     }
 
     // Create tokens for the user
@@ -281,7 +282,8 @@ exports.googleCallback = async (req, res) => {
     res.redirect(`${frontendURL}${redirectPath}`);
   } catch (err) {
     console.error("Google callback error:", err);
-    res.redirect('http://localhost:3000/login?error=server_error');
+    const frontendURL = process.env.FRONTEND_URL || 'http://localhost:3000';
+    res.redirect(`${frontendURL}/login?error=server_error`);
   }
 };
 
@@ -484,9 +486,14 @@ exports.logout = async (req, res) => {
       );
     }
 
-    // Clear cookies
-    res.clearCookie("refreshToken");
-    res.clearCookie("accessToken");
+    // Clear cookies - must use same options as when setting them for cross-origin
+    const cookieOptions = {
+      httpOnly: true,
+      secure: true,
+      sameSite: 'none',
+    };
+    res.clearCookie("refreshToken", cookieOptions);
+    res.clearCookie("accessToken", cookieOptions);
 
     res.status(200).json({
       status: "success",

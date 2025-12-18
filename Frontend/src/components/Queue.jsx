@@ -1,9 +1,9 @@
-import React from 'react';
+import { API_URL } from '@/lib/api';
 import { Spinner } from "flowbite-react";
 import { LuUsers } from "react-icons/lu";
 
 const Queue = async ({ index }) => {
-    const res = await fetch('http://localhost:3001/data');
+    const res = await fetch(`${API_URL}/data`);
     const data = await res.json();
     if (data.length === 0) return <Spinner color="success" aria-label="Success spinner example" />
     

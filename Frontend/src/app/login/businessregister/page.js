@@ -1,15 +1,13 @@
 "use client";
-import { API_URL } from '@/lib/api';
 import FormField from '@/components/BusinessRegister/FormField';
 import QueueSettingsSection from '@/components/BusinessRegister/QueueSettingsSection';
 import ServiceSection from '@/components/BusinessRegister/ServiceSection';
 import WorkingTimeSection from '@/components/BusinessRegister/WorkingTimeSection';
 import ProfilePhotoUpload from '@/components/ProfilePhotoUpload';
 import { Button } from '@/components/ui/button';
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useTranslations } from '@/hooks/useTranslations';
-import Image from 'next/image';
+import { API_URL, authFetch } from '@/lib/api';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
@@ -157,7 +155,6 @@ export default function Page() {
 
       const res = await fetch(API, {
         method: "POST",
-        credentials: "include",
         headers: {"Content-Type": "application/json"},
         body: JSON.stringify(businessData)
       });
@@ -168,6 +165,10 @@ export default function Page() {
         throw new Error(data.message || "Failed to register business");
       }
 
+      if (data.accessToken) {
+        localStorage.setItem('accessToken', data.accessToken);
+      }
+
       console.log('Business registered:', data);
 
       // Upload profile photo if selected
@@ -176,9 +177,8 @@ export default function Page() {
           const formData = new FormData();
           formData.append('profileImage', profilePhotoFile);
 
-          const uploadRes = await fetch(`${API_URL}/api/v1/businesses/upload-profile-photo`, {
+          const uploadRes = await authFetch(`${API_URL}/api/v1/businesses/upload-profile-photo`, {
             method: 'POST',
-            credentials: 'include',
             body: formData,
           });
 

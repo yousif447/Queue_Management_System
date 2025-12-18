@@ -1,8 +1,9 @@
+import { API_URL } from '@/lib/api';
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 import axios from "axios";
 
 const apiAsync = createAsyncThunk("auth/login", async () => {
-    const res = await axios.get("http:localhost:3001/data");
+    const res = await axios.get(`${API_URL}/data`);
     return res.data.data;
 })
 

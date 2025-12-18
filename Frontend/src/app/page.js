@@ -1,5 +1,5 @@
 "use client";
-import { API_URL } from '@/lib/api';
+import { API_URL, authFetch } from '@/lib/api';
 
 import BusinessDetailsModal from '@/components/BusinessDetailsModal';
 import ServiceCard from '@/components/HomePage/ServiceCard';
@@ -34,9 +34,7 @@ export default function Home() {
   useEffect(() => {
     const checkAuth = async () => {
       try {
-        const res = await fetch(`${API_URL}/api/v1/auth/me`, {
-          credentials: 'include',
-        });
+        const res = await authFetch(`${API_URL}/api/v1/auth/me`);
         setIsAuthenticated(res.ok);
       } catch (error) {
         setIsAuthenticated(false);
@@ -287,9 +285,7 @@ export default function Home() {
     setIsProcessing(true);
     try {
       // Fetch the queue for this business
-      const queueResponse = await fetch(`${API_URL}/api/v1/queues/business/${business._id}/queue`, {
-        credentials: 'include',
-      });
+      const queueResponse = await authFetch(`${API_URL}/api/v1/queues/business/${business._id}/queue`);
 
       if (!queueResponse.ok) {
         toast.error(t('toast.queueNotAvailable'));

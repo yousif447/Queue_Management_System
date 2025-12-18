@@ -104,13 +104,14 @@ exports.createSubscriptionCheckout = async (req, res) => {
     }
 
     // Create checkout session
+    const frontendURL = process.env.FRONTEND_URL || 'http://localhost:3000';
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
       payment_method_types: ["card"],
       mode: "subscription",
       line_items: lineItems,
-      success_url: `${process.env.FRONTEND_URL}/subscription/success?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${process.env.FRONTEND_URL}/subscription/cancel`,
+      success_url: `${frontendURL}/subscription/success?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${frontendURL}/subscription/cancel`,
       metadata: {
         businessId: businessId.toString(),
         plan: plan

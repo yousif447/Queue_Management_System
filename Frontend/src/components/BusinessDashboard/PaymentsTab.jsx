@@ -1,12 +1,12 @@
 'use client';
-import { API_URL } from '@/lib/api';
+import { API_URL, authFetch } from '@/lib/api';
 
 import { useTranslations } from '@/hooks/useTranslations';
+import { Banknote, CheckCircle, Clock, CreditCard, DollarSign, XCircle } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import toast from 'react-hot-toast';
-import { FaSearch, FaDownload, FaSort, FaSortUp, FaSortDown } from 'react-icons/fa';
-import { DollarSign, CreditCard, Banknote, CheckCircle, Clock, XCircle } from 'lucide-react';
-import { ResponsiveContainer, Tooltip, XAxis, YAxis, CartesianGrid, AreaChart, Area } from 'recharts';
+import { FaDownload, FaSearch, FaSort, FaSortDown, FaSortUp } from 'react-icons/fa';
+import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 
 const CustomTooltip = ({ active, payload, label }) => {
   if (active && payload && payload.length) {
@@ -55,7 +55,7 @@ export default function PaymentsTab({ businessId, currentPlan }) {
     const fetchPayments = async () => {
       if (!businessId) return;
       try {
-        const response = await fetch(`${API_URL}/api/v1/payments/businesses/${businessId}/payments`, { credentials: 'include' });
+        const response = await authFetch(`${API_URL}/api/v1/payments/businesses/${businessId}/payments`);
         if (response.ok) {
           const result = await response.json();
           const paymentsData = result.data?.payments || [];

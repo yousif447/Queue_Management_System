@@ -1,10 +1,10 @@
 "use client";
 
+import { API_URL, authFetch } from '@/lib/api';
 import { usePathname } from 'next/navigation';
 import { createContext, useContext, useEffect, useRef, useState } from 'react';
 import toast from 'react-hot-toast';
 import io from 'socket.io-client';
-import { API_URL } from '@/lib/api';
 
 const SocketContext = createContext(null);
 
@@ -48,7 +48,7 @@ export const SocketProvider = ({ children }) => {
 
   const fetchNotifications = async () => {
     try {
-      const res = await fetch(`${API_URL}/api/v1/notifications?limit=50`, { credentials: 'include' });
+      const res = await authFetch(`${API_URL}/api/v1/notifications?limit=50`);
       const data = await res.json();
       if(data.status === 'success') {
          const mapped = data.notifications.map(n => ({
@@ -116,9 +116,8 @@ export const SocketProvider = ({ children }) => {
       try {
           // Only call API if it's a real MongoDB ID (24 chars)
           if(typeof id === 'string' && id.length === 24) {
-             await fetch(`${API_URL}/api/v1/notifications/${id}/read`, { 
-                 method: 'PATCH',
-                 credentials: 'include' 
+             await authFetch(`${API_URL}/api/v1/notifications/${id}/read`, { 
+                 method: 'PATCH'
              });
           }
       } catch(e) { console.error("Failed to mark as read:", e); }

@@ -1,13 +1,13 @@
 "use client";
 import { useTranslations } from '@/hooks/useTranslations';
+import { API_URL } from '@/lib/api';
+import { ArrowRight, Building2, Eye, EyeOff, Lock, Mail, User } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import toast from 'react-hot-toast';
 import { FcGoogle } from "react-icons/fc";
-import { User, Building2, Shield, Mail, Lock, ArrowRight, Eye, EyeOff } from 'lucide-react';
-import { API_URL } from '@/lib/api';
 
 export default function Page() {
   const { t } = useTranslations();
@@ -43,6 +43,12 @@ export default function Page() {
       console.log('Login response:', result); // Debug log
       console.log('User role:', result.user?.role, 'Expected:', expectedRole); // Debug log
       if (!res.ok) throw new Error(result.message || "Failed to login");
+
+      // Store token in localStorage for cross-origin auth (cookies don't work cross-domain)
+      if (result.accessToken) {
+        localStorage.setItem('accessToken', result.accessToken);
+        console.log('Token stored in localStorage'); // Debug log
+      }
 
       // Check redirect
       const redirectUrl = sessionStorage.getItem('redirectAfterLogin');

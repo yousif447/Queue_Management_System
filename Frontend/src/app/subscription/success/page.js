@@ -1,8 +1,8 @@
 "use client";
-import { API_URL } from '@/lib/api';
+import { API_URL, authFetch } from '@/lib/api';
 
 import { useTranslations } from '@/hooks/useTranslations';
-import { CheckCircle, ArrowRight, Sparkles } from 'lucide-react';
+import { ArrowRight, CheckCircle, Sparkles } from 'lucide-react';
 import Link from 'next/link';
 import { useEffect, useRef, useState } from 'react';
 
@@ -25,10 +25,9 @@ export default function SubscriptionSuccessPage() {
           try {
             await new Promise(resolve => setTimeout(resolve, 2000));
             
-            const confirmRes = await fetch(`${API_URL}/api/v1/subscriptions/confirm-session`, {
+            const confirmRes = await authFetch(`${API_URL}/api/v1/subscriptions/confirm-session`, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
-              credentials: 'include',
               body: JSON.stringify({ sessionId })
             });
             
@@ -45,7 +44,7 @@ export default function SubscriptionSuccessPage() {
           }
         }
 
-        const res = await fetch(`${API_URL}/api/v1/subscriptions/status`, { credentials: 'include' });
+        const res = await authFetch(`${API_URL}/api/v1/subscriptions/status`);
         
         if (res.ok) {
           const data = await res.json();

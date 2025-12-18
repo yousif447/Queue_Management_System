@@ -1,8 +1,8 @@
 "use client";
-import { API_URL } from '@/lib/api';
+import { API_URL, authFetch } from '@/lib/api';
 
 import { useTranslations } from '@/hooks/useTranslations';
-import { CheckCircle, ArrowRight, Ticket, Sparkles } from 'lucide-react';
+import { ArrowRight, CheckCircle, Sparkles, Ticket } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import toast from 'react-hot-toast';
@@ -20,10 +20,9 @@ export default function PaymentSuccessPage() {
     if (session_id) {
       setSessionId(session_id);
       
-      fetch(`${API_URL}/api/v1/payments/confirm-session`, {
+      authFetch(`${API_URL}/api/v1/payments/confirm-session`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
         body: JSON.stringify({ session_id })
       })
       .then(res => res.json())

@@ -1,8 +1,8 @@
 "use client";
-import { API_URL } from '@/lib/api';
+import { API_URL, authFetch } from '@/lib/api';
 
+import { Calendar, Clock, MapPin, Phone } from 'lucide-react';
 import { useState } from 'react';
-import { Calendar, Clock, Ticket, Building2, MapPin, Phone, Mail, DollarSign, Users } from 'lucide-react';
 
 export default function AppointmentsTab({ t, myTickets, loadingTickets }) {
   const [completedTickets, setCompletedTickets] = useState([]);
@@ -12,7 +12,7 @@ export default function AppointmentsTab({ t, myTickets, loadingTickets }) {
   const fetchCompletedTickets = async () => {
     setLoadingCompleted(true);
     try {
-      const res = await fetch(`${API_URL}/api/v1/tickets/users/me/tickets`, { credentials: 'include' });
+      const res = await authFetch(`${API_URL}/api/v1/tickets/users/me/tickets`);
       if (res.ok) {
         const data = await res.json();
         const completed = (data.data || []).filter(ticket => ['completed', 'served', 'ended', 'done', 'cancelled', 'no-show'].includes(ticket.status));

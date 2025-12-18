@@ -1,8 +1,8 @@
 "use client";
-import { API_URL } from '@/lib/api';
+import { API_URL, authFetch } from '@/lib/api';
 
 import { useTranslations } from '@/hooks/useTranslations';
-import { CheckCircle, Loader2, ArrowRight, Zap, Crown, Rocket } from 'lucide-react';
+import { ArrowRight, CheckCircle, Crown, Loader2, Rocket, Zap } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
@@ -66,7 +66,7 @@ export default function SelectPlanPage() {
   useEffect(() => {
     const checkSubscription = async () => {
       try {
-        const res = await fetch(`${API_URL}/api/v1/subscriptions/status`, { credentials: 'include' });
+        const res = await authFetch(`${API_URL}/api/v1/subscriptions/status`);
         if (res.ok) {
           const data = await res.json();
           setCurrentSubscription(data.data);
@@ -82,10 +82,9 @@ export default function SelectPlanPage() {
     setLoading(true);
     setSelectedPlan(plan);
     try {
-      const res = await fetch(`${API_URL}/api/v1/subscriptions/create-checkout`, {
+      const res = await authFetch(`${API_URL}/api/v1/subscriptions/create-checkout`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
         body: JSON.stringify({ plan })
       });
       const data = await res.json();

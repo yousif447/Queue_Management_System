@@ -1,9 +1,9 @@
 "use client";
-import { API_URL } from '@/lib/api';
+import { API_URL, authFetch } from '@/lib/api';
 
+import { Calendar, CreditCard, Star, Ticket, X } from 'lucide-react';
 import { useState } from "react";
 import toast from "react-hot-toast";
-import { Ticket, Calendar, Clock, X, Star, Building2, CreditCard, Phone, Mail } from 'lucide-react';
 import ReviewModal from '../ReviewModal';
 
 export default function MyTicketsTab({ t, myTickets, loadingTickets, setMyTickets }) {
@@ -18,8 +18,8 @@ export default function MyTicketsTab({ t, myTickets, loadingTickets, setMyTicket
     setLoadingCompleted(true);
     try {
       const [ticketsRes, reviewsRes] = await Promise.all([
-        fetch(`${API_URL}/api/v1/tickets/users/me/tickets`, { credentials: 'include' }),
-        fetch(`${API_URL}/api/v1/reviews/users/me/reviews`, { credentials: 'include' })
+        authFetch(`${API_URL}/api/v1/tickets/users/me/tickets`),
+        authFetch(`${API_URL}/api/v1/reviews/users/me/reviews`)
       ]);
 
       if (ticketsRes.ok) {
@@ -53,8 +53,8 @@ export default function MyTicketsTab({ t, myTickets, loadingTickets, setMyTicket
     // if (!confirm('Are you sure you want to cancel this ticket?')) return; // Removed prompt as requested
     setCancellingId(ticketId);
     try {
-      const response = await fetch(`${API_URL}/api/v1/tickets/tickets/${ticketId}/cancel`, {
-        method: 'PATCH', credentials: 'include', headers: { 'Content-Type': 'application/json' },
+      const response = await authFetch(`${API_URL}/api/v1/tickets/tickets/${ticketId}/cancel`, {
+        method: 'PATCH', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ reason: 'User cancelled' }),
       });
       if (response.ok) {

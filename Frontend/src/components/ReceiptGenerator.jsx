@@ -1,5 +1,5 @@
 "use client";
-import { API_URL } from '@/lib/api';
+import { API_URL, authFetch } from '@/lib/api';
 
 import { Check, Download, FileText, Mail, Printer } from 'lucide-react';
 import { useRef, useState } from 'react';
@@ -51,12 +51,11 @@ export default function ReceiptGenerator({ receiptData }) {
 
   const handleDownload = async () => {
     try {
-      const response = await fetch(`${API_URL}/api/v1/payment/download-receipt`, {
+      const response = await authFetch(`${API_URL}/api/v1/payment/download-receipt`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        credentials: 'include',
         body: JSON.stringify({ receiptNumber }),
       });
 
@@ -82,12 +81,11 @@ export default function ReceiptGenerator({ receiptData }) {
   const handleEmailReceipt = async () => {
     setSending(true);
     try {
-      const response = await fetch(`${API_URL}/api/v1/payment/email-receipt`, {
+      const response = await authFetch(`${API_URL}/api/v1/payment/email-receipt`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        credentials: 'include',
         body: JSON.stringify({
           receiptNumber,
           email: customerEmail,

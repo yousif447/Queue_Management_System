@@ -1,5 +1,5 @@
 "use client";
-import { API_URL } from '@/lib/api';
+import { API_URL, authFetch } from '@/lib/api';
 
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
@@ -33,7 +33,7 @@ export default function SubscriptionGuard({ children }) {
       }
 
       try {
-        const authRes = await fetch(`${API_URL}/api/v1/auth/me`, { credentials: 'include' });
+        const authRes = await authFetch(`${API_URL}/api/v1/auth/me`);
 
         if (!authRes.ok) {
           setCanAccess(true);
@@ -50,7 +50,7 @@ export default function SubscriptionGuard({ children }) {
           return;
         }
 
-        const subRes = await fetch(`${API_URL}/api/v1/subscriptions/status`, { credentials: 'include' });
+        const subRes = await authFetch(`${API_URL}/api/v1/subscriptions/status`);
 
         if (subRes.ok) {
           const subData = await subRes.json();

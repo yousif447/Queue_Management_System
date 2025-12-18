@@ -1,10 +1,10 @@
 "use client";
 
+import { API_URL, authFetch } from '@/lib/api';
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect } from 'react';
-import Navbar from "./Navbar";
 import Footer from "./Footer";
-import { API_URL } from '@/lib/api';
+import Navbar from "./Navbar";
 
 export default function LayoutContent({ children }) {
   const pathname = usePathname();
@@ -15,7 +15,7 @@ export default function LayoutContent({ children }) {
   useEffect(() => {
     const checkAuth = async () => {
       try {
-        const res = await fetch(`${API_URL}/api/v1/auth/me`, { credentials: 'include' });
+        const res = await authFetch(`${API_URL}/api/v1/auth/me`);
         if (res.ok) {
           const data = await res.json();
           // Prevent redirect loop if user needs to select a plan or is on subscription pages

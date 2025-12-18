@@ -1,5 +1,5 @@
 "use client";
-import { API_URL } from '@/lib/api';
+import { API_URL, authFetch } from '@/lib/api';
 
 import { BiLogOut } from "react-icons/bi";
 import { BsTicketPerforatedFill } from "react-icons/bs";
@@ -79,15 +79,21 @@ export default function Sidebar({ t, activeTab, setActiveTab, isSidebarOpen, set
             <button 
               onClick={async () => {
                 try {
-                  const res = await fetch(`${API_URL}/api/v1/auth/logout`, {
+                  const res = await authFetch(`${API_URL}/api/v1/auth/logout`, {
                     method: 'POST',
-                    credentials: 'include',
                   });
-                  if (res.ok) {
-                    window.location.href = '/';
-                  }
+                  // Clear localStorage token and cookies
+                  localStorage.removeItem('accessToken');
+                  document.cookie = 'accessToken=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+                  document.cookie = 'refreshToken=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+                  window.location.href = '/';
                 } catch (error) {
                   console.error('Logout error:', error);
+                  // Still try to clear and redirect even on error
+                  localStorage.removeItem('accessToken');
+                  document.cookie = 'accessToken=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+                  document.cookie = 'refreshToken=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+                  window.location.href = '/';
                 }
               }}
               className="w-full flex items-center gap-3 px-4 py-3.5 rounded-xl text-red-500 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 border border-transparent hover:border-red-200 dark:hover:border-red-500/30 transition-all group"

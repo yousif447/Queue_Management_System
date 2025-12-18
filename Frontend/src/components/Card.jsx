@@ -1,7 +1,7 @@
-import React, { useEffect, useState } from 'react';
-import { MapPin, Clock, Users, ArrowRight, Star } from 'lucide-react';
+import { API_URL, authFetch } from '@/lib/api';
+import { ArrowRight, Clock, MapPin, Star, Users } from 'lucide-react';
+import { useEffect, useState } from 'react';
 import { v4 as uuid } from 'uuid';
-import { API_URL } from '@/lib/api';
 
 const Card = ({ clinic }) => {
     const [queueData, setQueueData] = useState(null);
@@ -18,7 +18,7 @@ const Card = ({ clinic }) => {
 
     const fetchQueueStatus = async () => {
         try {
-            const response = await fetch(`${API_URL}/api/v1/queues/business/${clinic._id}/queue`, { credentials: 'include' });
+            const response = await authFetch(`${API_URL}/api/v1/queues/business/${clinic._id}/queue`);
             if (response.ok) {
                 const data = await response.json();
                 setQueueData(data.data);

@@ -1,10 +1,10 @@
-import React from 'react';
+import { API_URL } from '@/lib/api';
 import { Spinner } from "flowbite-react";
 import { IoMdTime } from "react-icons/io";
 import { v4 as uuid } from 'uuid';
 
 const ShiftServices = async ({index}) => {
-    const res = await fetch('http://localhost:3001/data', {cache: 'force-cache'});
+    const res = await fetch(`${API_URL}/data`, {cache: 'force-cache'});
     const data = await res.json();
     if(data.length === 0) return <Spinner color="success" aria-label="Success spinner example" />
     

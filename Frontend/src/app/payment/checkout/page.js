@@ -1,8 +1,8 @@
 "use client";
-import { API_URL } from '@/lib/api';
+import { API_URL, authFetch } from '@/lib/api';
 
 import { useTranslations } from '@/hooks/useTranslations';
-import { Loader2, AlertCircle, Home, Shield, Lock } from 'lucide-react';
+import { AlertCircle, Home, Loader2, Lock, Shield } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import toast from 'react-hot-toast';
@@ -71,9 +71,8 @@ export default function StripeCheckoutPage() {
     }
 
     try {
-      const response = await fetch(`${API_URL}/api/v1/payments/create-checkout-session`, {
+      const response = await authFetch(`${API_URL}/api/v1/payments/create-checkout-session`, {
         method: 'POST',
-        credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ ticketId: data.ticketId }),
       });

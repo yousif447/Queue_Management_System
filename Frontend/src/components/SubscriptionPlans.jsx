@@ -1,11 +1,11 @@
 "use client";
-import { API_URL } from '@/lib/api';
+import { API_URL, authFetch } from '@/lib/api';
 
-import { Check, Crown, Rocket, X, Zap, ArrowRight } from 'lucide-react';
+import { useTranslations } from '@/hooks/useTranslations';
+import { ArrowRight, Check, Crown, Rocket, X, Zap } from 'lucide-react';
 import { useState } from 'react';
 import toast from 'react-hot-toast';
 import PaymentForm from './PaymentForm';
-import { useTranslations } from '@/hooks/useTranslations';
 
 const getPlans = (t) => [
   {
@@ -94,10 +94,9 @@ export default function SubscriptionPlans({ currentPlan = 'basic', onPlanChange 
 
   const handlePaymentSuccess = async (paymentData) => {
     try {
-      const response = await fetch(`${API_URL}/api/v1/subscription/subscribe`, {
+      const response = await authFetch(`${API_URL}/api/v1/subscription/subscribe`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
         body: JSON.stringify({ planId: selectedPlan.id, paymentIntentId: paymentData.paymentIntentId, billingPeriod }),
       });
       if (response.ok) {

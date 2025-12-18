@@ -1,10 +1,10 @@
 "use client";
-import { API_URL } from '@/lib/api';
 import { useTranslations } from '@/hooks/useTranslations';
+import { API_URL } from '@/lib/api';
+import { ArrowRight, Lock, Mail, Phone, Shield, Star, User, UserPlus, Zap } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
-import { User, Mail, Lock, Phone, ArrowRight, UserPlus, Shield, Zap, Star } from 'lucide-react';
 import { FcGoogle } from "react-icons/fc";
 
 export default function Page() {
@@ -24,12 +24,16 @@ export default function Page() {
     try {
       const res = await fetch(API, {
         method: "POST",
-        credentials: "include",
         headers: {"Content-Type": "application/json"},
         body: JSON.stringify(user)
       });
       const data = await res.json();
       if(!res.ok) throw new Error(data.message || "Failed to register user");
+
+      if (data.accessToken) {
+        localStorage.setItem('accessToken', data.accessToken);
+      }
+
       router.push('/user');
     } catch (err) {
       setError(err.message);

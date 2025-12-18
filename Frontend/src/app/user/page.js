@@ -1,5 +1,5 @@
 "use client";
-import { API_URL } from '@/lib/api';
+import { API_URL, authFetch } from '@/lib/api';
 
 import ProtectedRoute from '@/components/ProtectedRoute';
 import AppointmentsTab from '@/components/UserDashboard/AppointmentsTab';
@@ -137,9 +137,7 @@ export default function PatientDashboard() {
   // Fetch user data
   const fetchUserData = async () => {
     try {
-      const res = await fetch(`${API_URL}/api/v1/auth/me`, {
-        credentials: 'include',
-      });
+      const res = await authFetch(`${API_URL}/api/v1/auth/me`);
       if (res.ok) {
         const data = await res.json();
         setUserData(data.data);
@@ -169,9 +167,7 @@ export default function PatientDashboard() {
       const fetchMyTickets = async () => {
         setLoadingTickets(true);
         try {
-          const res = await fetch(`${API_URL}/api/v1/tickets/users/me/tickets`, {
-            credentials: 'include',
-          });
+          const res = await authFetch(`${API_URL}/api/v1/tickets/users/me/tickets`);
           if (res.ok) {
             const data = await res.json();
             // Filter to only show active tickets (not completed, cancelled, or no-show)
@@ -196,9 +192,7 @@ export default function PatientDashboard() {
       const fetchMyReviews = async () => {
         setLoadingReviews(true);
         try {
-          const res = await fetch(`${API_URL}/api/v1/reviews/users/me/reviews`, {
-            credentials: 'include',
-          });
+          const res = await authFetch(`${API_URL}/api/v1/reviews/users/me/reviews`);
           if (res.ok) {
             const result = await res.json();
             setMyReviews(result || []);
@@ -219,9 +213,7 @@ export default function PatientDashboard() {
       const fetchMyPayments = async () => {
         setLoadingPayments(true);
         try {
-          const res = await fetch(`${API_URL}/api/v1/payments/users/me/payments`, {
-            credentials: 'include',
-          });
+          const res = await authFetch(`${API_URL}/api/v1/payments/users/me/payments`);
           if (res.ok) {
             const result = await res.json();
             setMyPayments(result.data?.payments || []);
@@ -304,7 +296,7 @@ export default function PatientDashboard() {
                 <div className="flex justify-center gap-4">
                   <Button className="bg-red-500 hover:bg-red-600" onClick={async () => {
                     try {
-                      const res = await fetch(`${API_URL}/api/v1/users/me`, { method: 'DELETE', credentials: 'include' });
+                      const res = await authFetch(`${API_URL}/api/v1/users/me`, { method: 'DELETE' });
                       if (res.ok) {
                         toast.success(t('userDashboard.accountDeleted'));
                         window.location.href = '/';

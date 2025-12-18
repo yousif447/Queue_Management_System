@@ -1,16 +1,16 @@
 "use client";
 import { useSocket } from '@/contexts/SocketContext';
 import { useTranslations } from '@/hooks/useTranslations';
+import { API_URL, authFetch } from '@/lib/api';
+import { ChevronDown, Menu, X } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { BiLogOut } from "react-icons/bi";
 import { FaArrowRight } from "react-icons/fa";
-import { Menu, X, ChevronDown } from 'lucide-react';
 import LanguageSwitcher from './LanguageSwitcher';
 import NotificationBell from './NotificationBell';
 import ThemeToggle from './ThemeToggle';
-import { API_URL } from '@/lib/api';
 
 export default function Navbar() {
   const pathName = usePathname();
@@ -40,7 +40,7 @@ export default function Navbar() {
   useEffect(() => {
     const checkAuth = async () => {
       try {
-        const res = await fetch(`${API_URL}/api/v1/auth/me`, { credentials: 'include' });
+        const res = await authFetch(`${API_URL}/api/v1/auth/me`);
         if (res.ok) {
           setIsAuthenticated(true);
           const data = await res.json();
@@ -48,6 +48,7 @@ export default function Navbar() {
           if(data.data?._id) registerUser(data.data._id);
         } else {
           setIsAuthenticated(false);
+          localStorage.removeItem('accessToken');
         }
       } catch (error) {
         setIsAuthenticated(false);
@@ -64,9 +65,24 @@ export default function Navbar() {
 
   const handleLogout = async () => {
     try {
-      const res = await fetch(`${API_URL}/api/v1/auth/logout`, { method: 'POST', credentials: 'include' });
-      if (res.ok) { setIsAuthenticated(false); router.push('/'); window.location.reload(); }
-    } catch (error) { console.error('Logout error:', error); }
+      const res = await authFetch(`${API_URL}/api/v1/auth/logout`, { method: 'POST' });
+      // Clear localStorage token
+      localStorage.removeItem('accessToken');
+      // Clear cookies client-side as well (backup for cross-origin issues)
+      document.cookie = 'accessToken=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+      document.cookie = 'refreshToken=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+      setIsAuthenticated(false);
+      router.push('/');
+      window.location.reload();
+    } catch (error) {
+      console.error('Logout error:', error);
+      // Still try to clear and redirect even on error
+      localStorage.removeItem('accessToken');
+      document.cookie = 'accessToken=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+      document.cookie = 'refreshToken=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+      setIsAuthenticated(false);
+      router.push('/');
+    }
   };
 
   const navLinks = [

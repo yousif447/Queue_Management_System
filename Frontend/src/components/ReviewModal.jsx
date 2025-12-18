@@ -1,10 +1,10 @@
 "use client";
-import { API_URL } from '@/lib/api';
+import { API_URL, authFetch } from '@/lib/api';
 
+import { useTranslations } from '@/hooks/useTranslations';
+import { Send, Star, X } from 'lucide-react';
 import { useState } from 'react';
 import toast from 'react-hot-toast';
-import { Star, X, Send } from 'lucide-react';
-import { useTranslations } from '@/hooks/useTranslations';
 
 export default function ReviewModal({ ticket, onClose, onReviewSubmitted }) {
   const { t } = useTranslations();
@@ -30,9 +30,8 @@ export default function ReviewModal({ ticket, onClose, onReviewSubmitted }) {
 
     setIsSubmitting(true);
     try {
-      const response = await fetch(`${API_URL}/api/v1/reviews/reviews`, {
+      const response = await authFetch(`${API_URL}/api/v1/reviews/reviews`, {
         method: 'POST',
-        credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           businessId: ticket.businessId._id || ticket.businessId,

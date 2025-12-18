@@ -1,10 +1,10 @@
 "use client";
-import { API_URL } from '@/lib/api';
+import { API_URL, authFetch } from '@/lib/api';
 
 import { useTranslations } from '@/hooks/useTranslations';
-import { ArrowLeft, Building2, Calendar, CreditCard, Banknote, Shield, Lock, Check, ChevronDown, ChevronUp, MapPin, Phone, Clock, Star } from 'lucide-react';
+import { ArrowLeft, Banknote, Building2, Check, ChevronDown, ChevronUp, Clock, CreditCard, Lock, MapPin, Phone, Shield, Star } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import toast from 'react-hot-toast';
 
 export default function PaymentPage() {
@@ -26,9 +26,7 @@ export default function PaymentPage() {
 
     const checkAuth = async () => {
       try {
-        const response = await fetch(`${API_URL}/api/v1/auth/me`, {
-          credentials: 'include',
-        });
+        const response = await authFetch(`${API_URL}/api/v1/auth/me`);
         
         if (!response.ok) {
           const data = sessionStorage.getItem('pendingBooking');
@@ -88,9 +86,8 @@ export default function PaymentPage() {
     setProcessing(true);
     try {
       // Step 1: Create the ticket first (unpaid)
-      const ticketResponse = await fetch(`${API_URL}/api/v1/tickets/businesses/${bookingData.businessId}/tickets`, {
+      const ticketResponse = await authFetch(`${API_URL}/api/v1/tickets/businesses/${bookingData.businessId}/tickets`, {
         method: 'POST',
-        credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
           businessId: bookingData.businessId,
@@ -119,10 +116,9 @@ export default function PaymentPage() {
       if (paymentMethod === 'cash') {
         // Create pending payment record so it shows in dashboard
         try {
-            await fetch(`${API_URL}/api/v1/payments`, {
+            await authFetch(`${API_URL}/api/v1/payments`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                credentials: 'include',
                 body: JSON.stringify({
                     ticketId: ticket._id,
                     amount: amount,
@@ -143,10 +139,9 @@ export default function PaymentPage() {
       } else {
         // For Card (or other online methods handled by Stripe) -> Use Hosted Checkout Use Hosted Checkout
         try {
-          const sessionRes = await fetch(`${API_URL}/api/v1/payments/create-checkout-session`, {
+          const sessionRes = await authFetch(`${API_URL}/api/v1/payments/create-checkout-session`, {
              method: 'POST',
              headers: { 'Content-Type': 'application/json' },
-             credentials: 'include',
              body: JSON.stringify({
                  ticketId: ticket._id,
                  paymentMethod: paymentMethod // Pass method to configure checkout

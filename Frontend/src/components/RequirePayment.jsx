@@ -1,9 +1,9 @@
 "use client";
-import { API_URL } from '@/lib/api';
+import { API_URL, authFetch } from '@/lib/api';
 
+import { ArrowRight, Lock, Sparkles } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import { Lock, ArrowRight, Sparkles } from 'lucide-react';
 
 export default function RequirePayment({ children }) {
   const router = useRouter();
@@ -16,7 +16,7 @@ export default function RequirePayment({ children }) {
     const checkPaymentStatus = async (retryCount = 0) => {
       let status; // Define status here to be accessible in finally block
       try {
-        const res = await fetch(`${API_URL}/api/v1/auth/me`, { credentials: 'include' });
+        const res = await authFetch(`${API_URL}/api/v1/auth/me`);
 
         if (!res.ok) {
           router.push('/login');

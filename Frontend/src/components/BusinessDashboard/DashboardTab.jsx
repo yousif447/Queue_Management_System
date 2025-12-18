@@ -1,9 +1,9 @@
 "use client";
-import { API_URL } from '@/lib/api';
+import { API_URL, authFetch } from '@/lib/api';
 
 import { useSocket } from '@/contexts/SocketContext';
 import { useTranslations } from '@/hooks/useTranslations';
-import { Phone, Users, Clock, CheckCircle, Ticket, Sparkles } from 'lucide-react';
+import { CheckCircle, Clock, Sparkles, Ticket, Users } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import toast from 'react-hot-toast';
 import { FaForward, FaTimes, FaUser } from 'react-icons/fa';
@@ -83,7 +83,7 @@ export default function DashboardTab({ businessData }) {
       return;
     }
     try {
-      const response = await fetch(`${API_URL}/api/v1/tickets/businesses/${businessData._id}/tickets`, { credentials: "include" });
+      const response = await authFetch(`${API_URL}/api/v1/tickets/businesses/${businessData._id}/tickets`);
       if (response.ok) {
         const data = await response.json();
         const todayStr = new Date().toDateString();
@@ -103,7 +103,7 @@ export default function DashboardTab({ businessData }) {
   const fetchQueue = useCallback(async () => {
     if (!businessData?._id) return;
     try {
-      const response = await fetch(`${API_URL}/api/v1/queues/business/${businessData._id}/queue`, { credentials: "include" });
+      const response = await authFetch(`${API_URL}/api/v1/queues/business/${businessData._id}/queue`);
       if (response.ok) {
         const data = await response.json();
         setQueue(data.data);
@@ -121,7 +121,7 @@ export default function DashboardTab({ businessData }) {
     try {
       // Pass queueId to filter stats by current queue
       const queueParam = queue?._id ? `?queueId=${queue._id}` : '';
-      const response = await fetch(`${API_URL}/api/v1/stats/business/${businessData._id}${queueParam}`, { credentials: "include" });
+      const response = await authFetch(`${API_URL}/api/v1/stats/business/${businessData._id}${queueParam}`);
       if (response.ok) {
         const result = await response.json();
         const data = result.data || {};
@@ -253,7 +253,7 @@ export default function DashboardTab({ businessData }) {
   const handleCreateQueue = async () => {
     setQueueLoading(true);
     try {
-      const response = await fetch(`${API_URL}/api/v1/queues/business/${businessData._id}/queue`, { method: "POST", headers: { "Content-Type": "application/json" }, credentials: "include", body: JSON.stringify({ name: "Main Queue", status: "active", maxCapacity: 50, date: new Date() }) });
+      const response = await authFetch(`${API_URL}/api/v1/queues/business/${businessData._id}/queue`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ name: "Main Queue", status: "active", maxCapacity: 50, date: new Date() }) });
       if (response.ok) { 
         const data = await response.json(); 
         setQueue(data.data); 
@@ -272,7 +272,7 @@ export default function DashboardTab({ businessData }) {
   const handleOpenQueue = async () => {
     setQueueLoading(true);
     try {
-      const response = await fetch(`${API_URL}/api/v1/queues/queue/${queue._id}/resume`, { method: "PATCH", credentials: "include" });
+      const response = await authFetch(`${API_URL}/api/v1/queues/queue/${queue._id}/resume`, { method: "PATCH" });
       if (response.ok) { const data = await response.json(); setQueue(data.data); toast.success(t('businessDashboard.messages.queueOpened')); setShowQueueMenu(false); }
     } catch (error) { toast.error(t('businessDashboard.messages.failedOpenQueue')); }
     finally { setQueueLoading(false); }
@@ -281,7 +281,7 @@ export default function DashboardTab({ businessData }) {
   const handlePauseQueue = async () => {
     setQueueLoading(true);
     try {
-      const response = await fetch(`${API_URL}/api/v1/queues/queue/${queue._id}/pause`, { method: "PATCH", credentials: "include" });
+      const response = await authFetch(`${API_URL}/api/v1/queues/queue/${queue._id}/pause`, { method: "PATCH" });
       if (response.ok) { const data = await response.json(); setQueue(data.data); toast.success(t('businessDashboard.messages.queuePaused')); setShowQueueMenu(false); }
     } catch (error) { toast.error(t('businessDashboard.messages.failedPauseQueue')); }
     finally { setQueueLoading(false); }
@@ -290,7 +290,7 @@ export default function DashboardTab({ businessData }) {
   const handleCloseQueue = async () => {
     setQueueLoading(true);
     try {
-      const response = await fetch(`${API_URL}/api/v1/queues/queue/${queue._id}/close`, { method: "PATCH", credentials: "include" });
+      const response = await authFetch(`${API_URL}/api/v1/queues/queue/${queue._id}/close`, { method: "PATCH" });
       if (response.ok) { 
         const data = await response.json(); 
         setQueue(data.data); 
@@ -308,11 +308,10 @@ export default function DashboardTab({ businessData }) {
   const handleUpdateQueue = async () => {
     if (!queue || !newCapacity) return;
     try {
-      const response = await fetch(`${API_URL}/api/v1/queues/queue/${queue._id}`, {
+      const response = await authFetch(`${API_URL}/api/v1/queues/queue/${queue._id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ maxCapacity: parseInt(newCapacity) }),
-        credentials: 'include'
+        body: JSON.stringify({ maxCapacity: parseInt(newCapacity) })
       });
       if (response.ok) {
         const data = await response.json();
@@ -340,7 +339,7 @@ export default function DashboardTab({ businessData }) {
     }
     setCalling(true);
     try {
-      const response = await fetch(`${API_URL}/api/v1/tickets/tickets/${nextTicket._id}/call`, { method: "PUT", credentials: "include" });
+      const response = await authFetch(`${API_URL}/api/v1/tickets/tickets/${nextTicket._id}/call`, { method: "PUT" });
       if (response.ok) { 
         const data = await response.json();
         setCurrentTicket(data.data);
@@ -360,21 +359,21 @@ export default function DashboardTab({ businessData }) {
 
   const handleCallTicket = async (ticketId) => {
     try {
-      const response = await fetch(`${API_URL}/api/v1/tickets/tickets/${ticketId}/call`, { method: "PUT", credentials: "include" });
+      const response = await authFetch(`${API_URL}/api/v1/tickets/tickets/${ticketId}/call`, { method: "PUT" });
       if (response.ok) { toast.success(t('businessDashboard.messages.ticketCalled', { ticketNumber: "??" })); fetchTickets(); fetchStats(); }
     } catch (error) { toast.error(t('businessDashboard.messages.failedCall')); }
   };
 
   const handleMarkPaid = async (ticketId) => {
     try {
-      const response = await fetch(`${API_URL}/api/v1/tickets/tickets/${ticketId}/pay`, { method: "PATCH", credentials: "include" });
+      const response = await authFetch(`${API_URL}/api/v1/tickets/tickets/${ticketId}/pay`, { method: "PATCH" });
       if (response.ok) { toast.success(t('businessDashboard.messages.paymentRecorded')); fetchTickets(); }
     } catch (error) { toast.error(t('businessDashboard.messages.failedPayment')); }
   };
 
   const handleCompleteTicket = async (ticketId) => {
     try {
-      const response = await fetch(`${API_URL}/api/v1/tickets/tickets/${ticketId}/complete`, { method: "PATCH", credentials: "include" });
+      const response = await authFetch(`${API_URL}/api/v1/tickets/tickets/${ticketId}/complete`, { method: "PATCH" });
       if (response.ok) { toast.success(t('businessDashboard.messages.ticketCompleted')); fetchTickets(); fetchStats(); }
       else { const error = await response.json(); toast.error(error.message || t('businessDashboard.messages.failedComplete')); }
     } catch (error) { toast.error(t('businessDashboard.messages.failedComplete')); }
@@ -382,7 +381,7 @@ export default function DashboardTab({ businessData }) {
 
   const handleSkipTicket = async (ticketId) => {
     try {
-      const response = await fetch(`${API_URL}/api/v1/tickets/tickets/${ticketId}/no-show`, { method: "PATCH", credentials: "include" });
+      const response = await authFetch(`${API_URL}/api/v1/tickets/tickets/${ticketId}/no-show`, { method: "PATCH" });
       if (response.ok) { toast.success(t('businessDashboard.messages.ticketSkipped')); fetchTickets(); fetchStats(); }
       else { const error = await response.json(); toast.error(error.message || t('businessDashboard.messages.failedSkip')); }
     } catch (error) { toast.error(t('businessDashboard.messages.failedSkip')); }
@@ -390,7 +389,7 @@ export default function DashboardTab({ businessData }) {
 
   const handleCancelTicket = async (ticketId) => {
     try {
-      const response = await fetch(`${API_URL}/api/v1/tickets/tickets/${ticketId}/cancel`, { method: "PATCH", headers: { "Content-Type": "application/json" }, credentials: "include", body: JSON.stringify({ reason: "Cancelled by staff" }) });
+      const response = await authFetch(`${API_URL}/api/v1/tickets/tickets/${ticketId}/cancel`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ reason: "Cancelled by staff" }) });
       if (response.ok) { toast.success("Ticket cancelled"); fetchTickets(); fetchStats(); }
       else { const error = await response.json(); toast.error(error.message || t('businessDashboard.messages.failedCancel')); }
     } catch (error) { toast.error(t('businessDashboard.messages.failedCancel')); }
@@ -398,7 +397,7 @@ export default function DashboardTab({ businessData }) {
 
   const handleServeTicket = async (ticketId) => {
     try {
-      const response = await fetch(`${API_URL}/api/v1/tickets/tickets/${ticketId}/serve`, { method: "PATCH", credentials: "include" });
+      const response = await authFetch(`${API_URL}/api/v1/tickets/tickets/${ticketId}/serve`, { method: "PATCH" });
       if (response.ok) { toast.success(t('businessDashboard.messages.nowServing')); fetchTickets(); fetchStats(); }
       else { const error = await response.json(); toast.error(error.message || t('businessDashboard.messages.failedServe')); }
     } catch (error) { toast.error(t('businessDashboard.messages.failedServe')); }
@@ -407,10 +406,9 @@ export default function DashboardTab({ businessData }) {
   const handleAddWalkIn = async () => {
     if (!walkInData.name || !walkInData.phone) { toast.error(t('businessDashboard.messages.missingInfo')); return; }
     try {
-      const response = await fetch(`${API_URL}/api/v1/tickets/businesses/${businessData._id}/tickets`, { 
+      const response = await authFetch(`${API_URL}/api/v1/tickets/businesses/${businessData._id}/tickets`, { 
         method: "POST", 
         headers: { "Content-Type": "application/json" }, 
-        credentials: "include", 
         body: JSON.stringify({ 
           businessId: businessData._id,
           queueId: queue?._id,

@@ -1,9 +1,9 @@
 "use client";
-import { API_URL } from '@/lib/api';
+import { API_URL, authFetch } from '@/lib/api';
 
 import { useSocket } from '@/contexts/SocketContext';
+import { Building2, Calendar, Clock, Sparkles, Ticket, Users } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
-import { Ticket, Clock, MapPin, Building2, CreditCard, Calendar, Users, TrendingUp, Sparkles } from 'lucide-react';
 
 // Stat Card Component - Light/Dark mode compatible
 const StatCard = ({ title, value, subtitle, icon: Icon, color }) => (
@@ -39,9 +39,7 @@ export default function DashboardTab({
   useEffect(() => {
     const fetchActiveTicket = async () => {
       try {
-        const res = await fetch(`${API_URL}/api/v1/tickets/users/me/tickets`, {
-          credentials: 'include',
-        });
+        const res = await authFetch(`${API_URL}/api/v1/tickets/users/me/tickets`);
         if (res.ok) {
           const data = await res.json();
           const active = data.data?.find(t => 

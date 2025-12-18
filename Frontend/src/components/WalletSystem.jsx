@@ -1,5 +1,5 @@
 "use client";
-import { API_URL } from '@/lib/api';
+import { API_URL, authFetch } from '@/lib/api';
 
 import { ArrowDownRight, ArrowUpRight, History, Plus, TrendingUp, Wallet } from 'lucide-react';
 import { useEffect, useState } from 'react';
@@ -22,7 +22,7 @@ export default function WalletSystem() {
 
   const fetchWalletData = async () => {
     try {
-      const response = await fetch(`${API_URL}/api/v1/wallet`, { credentials: 'include' });
+      const response = await authFetch(`${API_URL}/api/v1/wallet`);
       
       if (response.ok) {
         const data = await response.json();
@@ -37,10 +37,9 @@ export default function WalletSystem() {
 
   const handleAddFunds = async (paymentData) => {
     try {
-      const response = await fetch(`${API_URL}/api/v1/wallet/add-funds`, {
+      const response = await authFetch(`${API_URL}/api/v1/wallet/add-funds`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
         body: JSON.stringify({
           amount: addAmount,
           paymentIntentId: paymentData.paymentIntentId,

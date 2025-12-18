@@ -1,11 +1,11 @@
 'use client';
-import { API_URL } from '@/lib/api';
+import { API_URL, authFetch } from '@/lib/api';
 
 import { useTranslations } from '@/hooks/useTranslations';
+import { CheckCircle, Clock, DollarSign, Trash2, UserCheck, Users, XCircle } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import toast from 'react-hot-toast';
-import { FaSearch, FaDownload, FaSort, FaSortUp, FaSortDown } from 'react-icons/fa';
-import { Users, UserCheck, DollarSign, CheckCircle, Clock, Trash2, XCircle } from 'lucide-react';
+import { FaDownload, FaSearch, FaSort, FaSortDown, FaSortUp } from 'react-icons/fa';
 
 const StatCard = ({ title, value, icon: Icon, color, subtitle }) => (
   <div className="relative overflow-hidden bg-white dark:bg-gradient-to-br dark:from-gray-900 dark:to-gray-800 p-5 rounded-2xl border border-gray-200 dark:border-gray-700/50 shadow-lg dark:shadow-xl group hover:shadow-xl dark:hover:shadow-2xl hover:scale-[1.02] transition-all duration-300">
@@ -37,7 +37,7 @@ export default function PatientsTab({ businessId, currentPlan }) {
     const fetchTickets = async () => {
       if (!businessId) return;
       try {
-        const response = await fetch(`${API_URL}/api/v1/tickets/businesses/${businessId}/tickets`, { credentials: 'include' });
+        const response = await authFetch(`${API_URL}/api/v1/tickets/businesses/${businessId}/tickets`);
         if (response.ok) {
           const result = await response.json();
           const ticketsData = result.data || [];
@@ -72,7 +72,7 @@ export default function PatientsTab({ businessId, currentPlan }) {
   const handleDelete = async (ticketId) => {
     if (!confirm(t('businessDashboard.patients.confirmDelete'))) return;
     try {
-      const response = await fetch(`${API_URL}/api/v1/tickets/tickets/${ticketId}`, { method: 'DELETE', credentials: 'include' });
+      const response = await authFetch(`${API_URL}/api/v1/tickets/tickets/${ticketId}`, { method: 'DELETE' });
       if (response.ok) { toast.success(t('businessDashboard.patients.deleteSuccess')); setTickets(tickets.filter(t => t._id !== ticketId)); }
       else { const error = await response.json(); toast.error(error.message || t('businessDashboard.patients.deleteFailed')); }
     } catch (error) { toast.error(t('businessDashboard.patients.deleteError')); }

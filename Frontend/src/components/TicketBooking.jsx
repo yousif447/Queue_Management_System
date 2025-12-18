@@ -1,5 +1,5 @@
 "use client";
-import { API_URL } from '@/lib/api';
+import { API_URL, authFetch } from '@/lib/api';
 
 import { AlertCircle, Clock, CreditCard, MapPin, Ticket, Users } from 'lucide-react';
 import { useState } from 'react';
@@ -43,10 +43,9 @@ export default function TicketBooking({ business }) {
   const createTicket = async (paymentData = null, returnOnly = false) => {
     if (!returnOnly) setBooking(true);
     try {
-      const response = await fetch(`${API_URL}/api/v1/businesses/${businessId}/tickets`, {
+      const response = await authFetch(`${API_URL}/api/v1/businesses/${businessId}/tickets`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
         body: JSON.stringify({ 
           priority,
           paymentMethod,

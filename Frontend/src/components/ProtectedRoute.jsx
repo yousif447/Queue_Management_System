@@ -1,8 +1,8 @@
 "use client";
 
-import { useRouter, usePathname } from 'next/navigation';
+import { API_URL, authFetch } from '@/lib/api';
+import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import { API_URL } from '@/lib/api';
 
 export default function ProtectedRoute({ children, allowedRoles = [] }) {
   const router = useRouter();
@@ -13,11 +13,11 @@ export default function ProtectedRoute({ children, allowedRoles = [] }) {
   useEffect(() => {
     const checkAuth = async () => {
       try {
-        const res = await fetch(`${API_URL}/api/v1/auth/me`, {
-          credentials: 'include',
-        });
+        const res = await authFetch(`${API_URL}/api/v1/auth/me`);
 
         if (!res.ok) {
+          // Clear invalid token
+          localStorage.removeItem('accessToken');
           if (pathname?.startsWith('/admin')) {
              router.push('/admin/login');
           } else {

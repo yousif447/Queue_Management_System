@@ -1,9 +1,9 @@
 'use client';
-import { API_URL } from '@/lib/api';
-import { useState, useEffect } from 'react';
 import { useTranslations } from '@/hooks/useTranslations';
-import { BarChart, Bar, AreaChart, Area, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, RadialBarChart, RadialBar } from 'recharts';
-import { TrendingUp, DollarSign, Users, Calendar, ArrowUpRight, ArrowDownRight } from 'lucide-react';
+import { API_URL, authFetch } from '@/lib/api';
+import { ArrowDownRight, ArrowUpRight, Calendar, DollarSign, TrendingUp, Users } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { Area, AreaChart, Bar, BarChart, CartesianGrid, Cell, Pie, PieChart, RadialBar, RadialBarChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 
 const CHART_COLORS = { primary: '#10B981', secondary: '#6366F1', accent: '#F59E0B', success: '#22C55E', info: '#3B82F6', gradient: ['#10B981', '#059669'] };
 const PIE_COLORS = ['#10B981', '#6366F1', '#F59E0B', '#EC4899', '#8B5CF6'];
@@ -57,9 +57,9 @@ export default function AnalyticsTab({ businessData }) {
     try {
       setLoading(true);
       const [revenueRes, bookingRes, customerRes] = await Promise.all([
-        fetch(`${API_URL}/api/v1/analytics/revenue?period=${period}`, { credentials: 'include' }),
-        fetch(`${API_URL}/api/v1/analytics/bookings?period=${period}`, { credentials: 'include' }),
-        fetch(`${API_URL}/api/v1/analytics/customers`, { credentials: 'include' })
+        authFetch(`${API_URL}/api/v1/analytics/revenue?period=${period}`),
+        authFetch(`${API_URL}/api/v1/analytics/bookings?period=${period}`),
+        authFetch(`${API_URL}/api/v1/analytics/customers`)
       ]);
       if (revenueRes.ok) { const data = await revenueRes.json(); setRevenueData(data.data); }
       if (bookingRes.ok) { const data = await bookingRes.json(); setBookingData(data.data); }

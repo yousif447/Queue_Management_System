@@ -1,10 +1,10 @@
 "use client";
-import { API_URL } from '@/lib/api';
+import { API_URL, authFetch } from '@/lib/api';
 
+import BusinessDetailsModal from '@/components/BusinessDetailsModal';
+import { Building2, Clock, Search, Sparkles } from 'lucide-react';
 import { useState } from "react";
 import toast from "react-hot-toast";
-import { Search, MapPin, Clock, Star, Ticket, Building2, Sparkles } from 'lucide-react';
-import BusinessDetailsModal from '@/components/BusinessDetailsModal';
 
 export default function FindBusinessTab({ t, searchResults, isSearching, searchQuery, setSearchQuery, handleSearch, isAISuggestion }) {
   const [selectedBusiness, setSelectedBusiness] = useState(null);
@@ -16,7 +16,7 @@ export default function FindBusinessTab({ t, searchResults, isSearching, searchQ
     if (!business) return;
     setIsProcessing(true);
     try {
-      const queueResponse = await fetch(`${API_URL}/api/v1/queues/business/${business._id}/queue`, { credentials: 'include' });
+      const queueResponse = await authFetch(`${API_URL}/api/v1/queues/business/${business._id}/queue`);
       if (!queueResponse.ok) { toast.error(t('userDashboard.messages.queueNotAvailable')); setIsProcessing(false); return; }
       const queueData = await queueResponse.json();
       const queueId = queueData.data?._id;

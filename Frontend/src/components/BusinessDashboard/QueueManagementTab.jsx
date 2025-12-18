@@ -1,5 +1,5 @@
 "use client";
-import { API_URL } from '@/lib/api';
+import { API_URL, authFetch } from '@/lib/api';
 
 import { useSocket } from '@/contexts/SocketContext';
 import { useTranslations } from '@/hooks/useTranslations';
@@ -26,9 +26,7 @@ export default function QueueManagementTab({ businessId }) {
   const fetchTickets = useCallback(async () => {
     if (!businessId) return;
     try {
-      const response = await fetch(`${API_URL}/api/v1/businesses/${businessId}/tickets`, {
-        credentials: 'include',
-      });
+      const response = await authFetch(`${API_URL}/api/v1/businesses/${businessId}/tickets`);
       if (response.ok) {
         const data = await response.json();
         setTickets(data.tickets || []);
@@ -43,9 +41,7 @@ export default function QueueManagementTab({ businessId }) {
   const fetchQueue = useCallback(async () => {
     if (!businessId) return;
     try {
-      const response = await fetch(`${API_URL}/api/v1/business/${businessId}/queue`, {
-        credentials: 'include',
-      });
+      const response = await authFetch(`${API_URL}/api/v1/business/${businessId}/queue`);
       if (response.ok) {
         const data = await response.json();
         setQueue(data.data);
@@ -58,9 +54,7 @@ export default function QueueManagementTab({ businessId }) {
   const fetchStats = useCallback(async () => {
     if (!businessId) return;
     try {
-      const response = await fetch(`${API_URL}/api/v1/stats/business/${businessId}`, {
-        credentials: 'include',
-      });
+      const response = await authFetch(`${API_URL}/api/v1/stats/business/${businessId}`);
       if (response.ok) {
         const data = await response.json();
         setStats({
@@ -118,9 +112,8 @@ export default function QueueManagementTab({ businessId }) {
       const newStatus = queue.status === 'active' ? 'paused' : 'active';
       const endpoint = newStatus === 'active' ? 'resume' : 'pause';
       
-      const response = await fetch(`${API_URL}/api/v1/queue/${queue._id}/${endpoint}`, {
+      const response = await authFetch(`${API_URL}/api/v1/queue/${queue._id}/${endpoint}`, {
         method: 'PATCH',
-        credentials: 'include',
       });
       
       if (response.ok) {
@@ -152,9 +145,8 @@ export default function QueueManagementTab({ businessId }) {
         return;
       }
 
-      const response = await fetch(`${API_URL}/api/v1/tickets/tickets/${nextTicket._id}/call`, {
+      const response = await authFetch(`${API_URL}/api/v1/tickets/tickets/${nextTicket._id}/call`, {
         method: 'PUT',
-        credentials: 'include',
       });
 
       if (response.ok) {
@@ -180,9 +172,8 @@ export default function QueueManagementTab({ businessId }) {
 
   const handleServeTicket = async (ticketId) => {
     try {
-      const response = await fetch(`${API_URL}/api/v1/tickets/tickets/${ticketId}/serve`, {
+      const response = await authFetch(`${API_URL}/api/v1/tickets/tickets/${ticketId}/serve`, {
         method: 'PUT',
-        credentials: 'include',
       });
 
       if (response.ok) {
@@ -200,9 +191,8 @@ export default function QueueManagementTab({ businessId }) {
 
   const handleCancelTicket = async (ticketId) => {
     try {
-      const response = await fetch(`${API_URL}/api/v1/tickets/tickets/${ticketId}`, {
+      const response = await authFetch(`${API_URL}/api/v1/tickets/tickets/${ticketId}`, {
         method: 'DELETE',
-        credentials: 'include',
       });
 
       if (response.ok) {

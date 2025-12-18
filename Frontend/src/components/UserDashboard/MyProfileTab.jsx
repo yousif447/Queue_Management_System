@@ -1,10 +1,10 @@
 "use client";
-import { API_URL } from '@/lib/api';
+import { API_URL, authFetch } from '@/lib/api';
 
 import UserProfilePhoto from '@/components/UserProfilePhoto';
+import { Edit3, Mail, Phone, Save, Shield, Trash2, User } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import toast from 'react-hot-toast';
-import { User, Mail, Phone, Shield, CheckCircle, Edit3, Save, Trash2, AlertTriangle } from 'lucide-react';
 
 const SectionCard = ({ children }) => (
   <div className="bg-white dark:bg-gradient-to-br dark:from-gray-900 dark:to-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700/50 p-6 shadow-lg dark:shadow-xl">{children}</div>
@@ -29,8 +29,8 @@ export default function MyProfileTab({ t, userData, isDisabled, handleEditProfil
 
   const handleSave = async () => {
     try {
-      const response = await fetch(`${API_URL}/api/v1/users/me`, {
-        method: 'PUT', headers: { 'Content-Type': 'application/json' }, credentials: 'include',
+      const response = await authFetch(`${API_URL}/api/v1/users/me`, {
+        method: 'PUT', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name: formData.name, phone: formData.phone }),
       });
       const data = await response.json();

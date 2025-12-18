@@ -1,5 +1,5 @@
 "use client";
-import { API_URL } from '@/lib/api';
+import { API_URL, authFetch } from '@/lib/api';
 
 import { Elements } from '@stripe/react-stripe-js';
 import { loadStripe } from '@stripe/stripe-js';
@@ -21,12 +21,11 @@ export const usePayment = () => {
 export const PaymentProvider = ({ children }) => {
   const createPaymentIntent = async (amount, currency = 'usd', metadata = {}) => {
     try {
-      const response = await fetch(`${API_URL}/api/v1/payment/create-intent`, {
+      const response = await authFetch(`${API_URL}/api/v1/payment/create-intent`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        credentials: 'include',
         body: JSON.stringify({
           amount,
           currency,
@@ -48,12 +47,11 @@ export const PaymentProvider = ({ children }) => {
 
   const confirmPayment = async (paymentIntentId) => {
     try {
-      const response = await fetch(`${API_URL}/api/v1/payment/confirm`, {
+      const response = await authFetch(`${API_URL}/api/v1/payment/confirm`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        credentials: 'include',
         body: JSON.stringify({
           paymentIntentId,
         }),
@@ -73,9 +71,7 @@ export const PaymentProvider = ({ children }) => {
 
   const getPaymentHistory = async () => {
     try {
-      const response = await fetch(`${API_URL}/api/v1/payment/history`, {
-        credentials: 'include',
-      });
+      const response = await authFetch(`${API_URL}/api/v1/payment/history`);
 
       const data = await response.json();
       if (!response.ok) {

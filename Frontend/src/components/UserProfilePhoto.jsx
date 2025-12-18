@@ -1,5 +1,5 @@
 "use client";
-import { API_URL } from '@/lib/api';
+import { API_URL, authFetch } from '@/lib/api';
 
 import { useEffect, useRef, useState } from 'react';
 import toast from 'react-hot-toast';
@@ -36,9 +36,8 @@ export default function UserProfilePhoto({ userData, isDisabled = true, onPhotoU
       const formData = new FormData();
       formData.append('profileImage', file);
 
-      const response = await fetch(`${API_URL}/api/v1/users/upload-profile-photo`, {
+      const response = await authFetch(`${API_URL}/api/v1/users/upload-profile-photo`, {
         method: 'POST',
-        credentials: 'include',
         body: formData,
       });
 

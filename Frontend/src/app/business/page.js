@@ -1,12 +1,9 @@
 "use client";
-import { API_URL } from '@/lib/api';
+import { API_URL, authFetch } from '@/lib/api';
 
-import dynamic from 'next/dynamic';
 import DashboardTab from '@/components/BusinessDashboard/DashboardTab';
-const AnalyticsTab = dynamic(() => import('@/components/BusinessDashboard/AnalyticsTab'), { ssr: false });
 import PatientsTab from '@/components/BusinessDashboard/PatientsTab';
 import PaymentsTab from '@/components/BusinessDashboard/PaymentsTab';
-import PlaceholderTab from '@/components/BusinessDashboard/PlaceholderTab';
 import ProfileTab from '@/components/BusinessDashboard/ProfileTab';
 import ReviewsTab from '@/components/BusinessDashboard/ReviewsTab';
 import Sidebar from '@/components/BusinessDashboard/Sidebar';
@@ -14,12 +11,14 @@ import ProtectedRoute from '@/components/ProtectedRoute';
 import RequirePayment from '@/components/RequirePayment';
 import { useTranslations } from '@/hooks/useTranslations';
 import { Button, Modal, ModalBody, ModalHeader } from "flowbite-react";
+import dynamic from 'next/dynamic';
 import { useEffect, useState } from 'react';
-import { FaBars, FaCalendarAlt, FaCreditCard, FaTimes, FaUser, FaUsers, FaChartLine } from "react-icons/fa";
+import toast from 'react-hot-toast';
+import { FaBars, FaChartLine, FaCreditCard, FaTimes, FaUser, FaUsers } from "react-icons/fa";
 import { HiOutlineExclamationCircle } from "react-icons/hi";
 import { MdReviews } from 'react-icons/md';
 import { SiGoogleanalytics } from "react-icons/si";
-import toast from 'react-hot-toast';
+const AnalyticsTab = dynamic(() => import('@/components/BusinessDashboard/AnalyticsTab'), { ssr: false });
 
 export default function ClinicDashboard() {
   const { t } = useTranslations();
@@ -97,12 +96,11 @@ export default function ClinicDashboard() {
 
   const handleSaveEdit = async (formData) => {
     try {
-      const response = await fetch(`${API_URL}/api/v1/businesses/${businessData._id}`, {
+      const response = await authFetch(`${API_URL}/api/v1/businesses/${businessData._id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
         },
-        credentials: 'include',
         body: JSON.stringify(formData),
       });
 
@@ -126,9 +124,8 @@ export default function ClinicDashboard() {
 
   const confirmDeleteAccount = async () => {
     try {
-      const response = await fetch(`${API_URL}/api/v1/businesses/business/${businessData._id}`, {
+      const response = await authFetch(`${API_URL}/api/v1/businesses/business/${businessData._id}`, {
         method: 'DELETE',
-        credentials: 'include',
       });
 
       if (response.ok) {
@@ -136,9 +133,8 @@ export default function ClinicDashboard() {
         setOpenModal(false);
         
         // Logout and redirect to home
-        await fetch(`${API_URL}/api/v1/auth/logout`, {
+        await authFetch(`${API_URL}/api/v1/auth/logout`, {
           method: 'POST',
-          credentials: 'include',
         });
         
         window.location.href = '/';
@@ -155,9 +151,7 @@ export default function ClinicDashboard() {
   // Fetch business data
   const fetchBusinessData = async () => {
     try {
-      const res = await fetch(`${API_URL}/api/v1/auth/me`, {
-        credentials: 'include',
-      });
+      const res = await authFetch(`${API_URL}/api/v1/auth/me`);
       if (res.ok) {
         const data = await res.json();
         setBusinessData(data.data);

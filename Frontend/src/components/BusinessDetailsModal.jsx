@@ -1,11 +1,11 @@
 "use client";
-import { API_URL } from '@/lib/api';
+import { API_URL, authFetch } from '@/lib/api';
 
-import { Building2, MapPin, Phone, Mail, Clock, Star, X } from 'lucide-react';
-import { FaStar } from 'react-icons/fa';
-import { useEffect, useState, useRef } from 'react';
-import toast from 'react-hot-toast';
 import { useTranslations } from '@/hooks/useTranslations';
+import { Building2, Clock, Mail, MapPin, Phone, X } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
+import toast from 'react-hot-toast';
+import { FaStar } from 'react-icons/fa';
 
 export default function BusinessDetailsModal({ business, onClose, onBook, isAuthenticated }) {
   const { t } = useTranslations();
@@ -64,9 +64,7 @@ export default function BusinessDetailsModal({ business, onClose, onBook, isAuth
 
   const checkQueueStatus = async () => {
     try {
-      const response = await fetch(`${API_URL}/api/v1/queues/business/${business._id}/queue`, {
-        credentials: 'include'
-      });
+      const response = await authFetch(`${API_URL}/api/v1/queues/business/${business._id}/queue`);
       if (response.ok) {
         const data = await response.json();
         console.log('🔍 Modal Queue Status Check:', {
@@ -89,9 +87,7 @@ export default function BusinessDetailsModal({ business, onClose, onBook, isAuth
       }
       
       // Check subscription booking limit
-      const limitResponse = await fetch(`${API_URL}/api/v1/subscriptions/business/${business._id}/check`, {
-        credentials: 'include'
-      });
+      const limitResponse = await authFetch(`${API_URL}/api/v1/subscriptions/business/${business._id}/check`);
       if (limitResponse.ok) {
         const limitData = await limitResponse.json();
         if (limitData.data) {
@@ -109,9 +105,7 @@ export default function BusinessDetailsModal({ business, onClose, onBook, isAuth
 
   const checkReviewEligibility = async () => {
     try {
-      const response = await fetch(`${API_URL}/api/v1/tickets/users/me/tickets?businessId=${business._id}`, {
-        credentials: 'include'
-      });
+      const response = await authFetch(`${API_URL}/api/v1/tickets/users/me/tickets?businessId=${business._id}`);
       if (response.ok) {
         const data = await response.json();
         const tickets = data.data || [];
@@ -125,9 +119,7 @@ export default function BusinessDetailsModal({ business, onClose, onBook, isAuth
 
   const fetchCurrentUser = async () => {
     try {
-      const response = await fetch(`${API_URL}/api/v1/auth/me`, {
-        credentials: 'include',
-      });
+      const response = await authFetch(`${API_URL}/api/v1/auth/me`);
       if (response.ok) {
         const data = await response.json();
         // Handle nested response structure { status: 'success', data: { user } } or { data: ... }
@@ -184,9 +176,8 @@ export default function BusinessDetailsModal({ business, onClose, onBook, isAuth
         reviewData.anonymousName = "Anonymous";
       }
 
-      const response = await fetch(`${API_URL}/api/v1/reviews/reviews`, {
+      const response = await authFetch(`${API_URL}/api/v1/reviews/reviews`, {
         method: 'POST',
-        credentials: 'include',
         headers: {
           'Content-Type': 'application/json',
         },
