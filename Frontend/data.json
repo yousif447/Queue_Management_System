@@ -1,0 +1,60 @@
+{
+  "data": [
+    {
+      "businessName": "Prime Health Clinic",
+      "category": "Healthcare",
+      "location": "City Center",
+      "rating": 4.7,
+      "queue": {
+        "current": 6,
+        "max": 30,
+        "waitTime": "7 min"
+      },
+      "workingHours": "8:00 AM - 6:00 PM",
+      "services": ["General Consultation", "Dermatology", "Vaccination"],
+      "action": "Book Now"
+    },
+    {
+      "businessName": "CarePlus Medical Center",
+      "category": "Healthcare",
+      "location": "North District",
+      "rating": 4.3,
+      "queue": {
+        "current": 12,
+        "max": 50,
+        "waitTime": "15 min"
+      },
+      "workingHours": "9:00 AM - 7:00 PM",
+      "services": ["Lab Tests", "Radiology", "General Consultation"],
+      "action": "Book Now"
+    },
+    {
+      "businessName": "Healing Touch Clinic",
+      "category": "Healthcare",
+      "location": "East Side",
+      "rating": 4.5,
+      "queue": {
+        "current": 4,
+        "max": 20,
+        "waitTime": "5 min"
+      },
+      "workingHours": "7:30 AM - 4:00 PM",
+      "services": ["Pediatrics", "Vaccination", "General Consultation"],
+      "action": "Book Now"
+    },
+    {
+      "businessName": "VitalCare Health Center",
+      "category": "Healthcare",
+      "location": "West Town",
+      "rating": 4.8,
+      "queue": {
+        "current": 9,
+        "max": 40,
+        "waitTime": "10 min"
+      },
+      "workingHours": "8:00 AM - 5:00 PM",
+      "services": ["General Consultation", "Cardiology", "Lab Tests"],
+      "action": "Book Now"
+    }
+  ]
+}

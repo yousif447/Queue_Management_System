@@ -1,0 +1,31 @@
+
+exports.sendTestNotification = async (req, res) => {
+  try {
+    const userId = req.user ? req.user.id : null;
+    if (!userId) return res.status(401).json({ message: "Login required" });
+
+    const socketIO = req.app.get("socketIO");
+    if (socketIO) {
+      // Emit 'yourTicketCalled' to simulate a turn notification
+      socketIO.emitToUser(userId, 'yourTicketCalled', {
+        ticket: { ticketNumber: 999, status: 'called', _id: 'test_id' },
+        message: "🔔 Test Notification: System is responding!",
+        timestamp: new Date()
+      });
+      
+      // Also emit a generic payment update to test that too
+      socketIO.emitToUser(userId, 'paymentUpdate', {
+        status: 'success',
+        message: "💳 Test Payment confirmed",
+        ticketId: 'test_ticket'
+      });
+      
+      return res.status(200).json({ message: "Test notifications sent to your device!" });
+    }
+
+    res.status(500).json({ message: "Socket service not found" });
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({ message: "Error sending test" });
+  }
+};

@@ -1,0 +1,19 @@
+{
+  "welcome": "Welcome",
+  "businessDashboard": {
+    "nav": {
+      "dashboard": "Dashboard",
+      "payments": "Payments",
+      "reviews": "Reviews",
+      "profile": "Profile"
+    }
+  },
+  "userDashboard": {
+    "confirmDelete": "Are you sure you want to delete your account?",
+    "confirm": "Yes, I'm sure",
+    "cancel": "No, cancel",
+    "tabs": {
+        "dashboard": "Dashboard"
+    }
+  }
+}

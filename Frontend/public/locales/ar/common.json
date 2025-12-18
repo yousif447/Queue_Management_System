@@ -1,0 +1,19 @@
+{
+  "welcome": "أهلا بك",
+  "businessDashboard": {
+    "nav": {
+      "dashboard": "الرئيسية",
+      "payments": "المدفوعات",
+      "reviews": "التقييمات",
+      "profile": "الملف الشخصي"
+    }
+  },
+   "userDashboard": {
+    "confirmDelete": "هل أنت متأكد أنك تريد حذف حسابك؟",
+    "confirm": "نعم، أنا متأكد",
+    "cancel": "لا، إلغاء",
+    "tabs": {
+        "dashboard": "لوحة التحكم"
+    }
+  }
+}
