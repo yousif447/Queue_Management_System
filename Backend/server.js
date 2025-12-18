@@ -43,31 +43,17 @@ app.use('/uploads', express.static('uploads'));
 const allowedOrigins = [
   'https://queue-management-system-beta.vercel.app',
   'http://localhost:3000',
-  'http://127.0.0.1:3000',
-  'http://localhost:3001',
   process.env.FRONTEND_URL // Also allow env var if set
 ].filter(Boolean); // Remove undefined/null
 
 app.use(
   cors({
     origin: function(origin, callback) {
-      // Allow requests with no origin (like mobile apps, curl, or tools)
+      // Allow requests with no origin (like mobile apps or curl)
       if (!origin) return callback(null, true);
-
-      // Direct match
-      if (allowedOrigins.includes(origin)) return callback(null, true);
-
-      // Allow same-host localhost variants (http://localhost:XXXX, http://127.0.0.1:XXXX)
-      try {
-        const { hostname } = new URL(origin);
-        if (hostname === 'localhost' || hostname === '127.0.0.1') return callback(null, true);
-      } catch (err) {
-        // If parsing failed, continue to deny
+      if (allowedOrigins.includes(origin)) {
+        return callback(null, true);
       }
-
-      // If FRONTEND_URL is set and origin starts with it, allow
-      if (process.env.FRONTEND_URL && origin.startsWith(process.env.FRONTEND_URL)) return callback(null, true);
-
       return callback(new Error('Not allowed by CORS'), false);
     },
     credentials: true,
@@ -89,7 +75,7 @@ connectDB();
 const server = http.createServer(app);
 const io = new Server(server, {
   cors: {
-    origin: allowedOrigins,
+    origin: process.env.FRONTEND_URL || "*",
     methods: ["GET", "POST"],
     credentials: true,
   },
