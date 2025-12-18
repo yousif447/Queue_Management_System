@@ -1,820 +1,1137 @@
-// controllers/authController.js
-const crypto = require("crypto");
-const jwt = require("jsonwebtoken");
+const Payment = require("../models/paymentSchema");
+const Ticket = require("../models/ticketSchema");
+const Stripe = require("stripe");
 const User = require("../models/userSchema");
-const Business = require("../models/businessSchema");
-const { signJwt, signRefreshToken, hashToken } = require("../utils/token");
-const { sendOTPEmail } = require("../utils/emailService");
-const bcrypt = require("bcryptjs");
+const Notification = require("../models/notificationSchema");
+const { sendNotificationEmail } = require("../utils/emailService");
 
-// Utility to convert durations like "7d" or "15m" to ms
-function parseDuration(str) {
-  // supports formats like "15m", "7d", "1h"
-  const m = str.match(/^(\d+)(d|h|m|s)$/);
-  if (!m) return 0;
-  const val = Number(m[1]);
-  const unit = m[2];
-  switch (unit) {
-    case "d":
-      return val * 24 * 60 * 60 * 1000;
-    case "h":
-      return val * 60 * 60 * 1000;
-    case "m":
-      return val * 60 * 1000;
-    case "s":
-      return val * 1000;
-    default:
-      return 0;
+// Helper function to get Stripe instance with proper error handling
+function getStripe() {
+  const key = process.env.STRIPE_SECRET_KEY;
+  if (!key) {
+    throw new Error(
+      "Missing STRIPE_SECRET_KEY environment variable. Set it in .env."
+    );
   }
+  return Stripe(key);
 }
 
-// Helper to create and send tokens
-const createSendTokens = async ({ entity, res, payload }) => {
+// -------------------------
+// POST /api/v1/payments/create-checkout-session
+// Create Stripe Checkout Session
+// -------------------------
+exports.createCheckoutSession = async (req, res, next) => {
   try {
-    const accessToken = signJwt(payload);
-    const refreshTokenRaw = signRefreshToken(payload);
+    const { ticketId, paymentMethod } = req.body;
 
-    // store hashed refresh token in DB (with expiry)
-    const hashed = hashToken(refreshTokenRaw);
-    const expiresAt = new Date(
-      Date.now() + parseDuration(process.env.JWT_REFRESH_EXPIRES_IN || "7d"),
-    );
+    if (!ticketId) {
+      return res.status(400).json({
+        status: "fail",
+        message: "ticketId is required",
+      });
+    }
 
-    // push to entity.refreshTokens
-    entity.refreshTokens = entity.refreshTokens || [];
-    entity.refreshTokens.push({
-      token: hashed,
-      createdAt: Date.now(),
-      expiresAt,
-    });
-
-    await entity.save({ validateBeforeSave: false });
-
-    // Set httpOnly cookies for both refresh and access tokens
-    // Always use sameSite: 'none' and secure: true for cross-origin deployments
-    // This is required when frontend (Vercel) and backend (Back4App) are on different domains
-    const cookieOptions = {
-      httpOnly: true,
-      secure: true, // Required for sameSite: 'none'
-      sameSite: 'none', // Required for cross-origin cookies
-    };
-
-    res.cookie("refreshToken", refreshTokenRaw, {
-      ...cookieOptions,
-      maxAge: parseDuration(process.env.JWT_REFRESH_EXPIRES_IN || "7d"),
-    });
-
-    res.cookie("accessToken", accessToken, {
-      ...cookieOptions,
-      maxAge: parseDuration(process.env.JWT_EXPIRES_IN || "15m"),
-    });
-
-    // Remove sensitive fields before sending response
-    const entityResponse = entity.toObject ? entity.toObject() : entity;
-    delete entityResponse.password;
-    delete entityResponse.refreshTokens;
-    delete entityResponse.passwordResetToken;
-    delete entityResponse.passwordResetExpires;
-
-    // send access token in body
-    res.status(200).json({
-      status: "success",
-      accessToken,
-      expiresIn: process.env.JWT_EXPIRES_IN || "15m",
-      user: entityResponse,
-    });
-  } catch (error) {
-    throw new Error(`Failed to create tokens: ${error.message}`);
-  }
-};
-
-// ----------------- Register User -----------------
-exports.registerUser = async (req, res) => {
-  try {
-    const { name, email, password, phone } = req.body;
+    // Verify ticket exists
+    const ticket = await Ticket.findById(ticketId)
+      .populate('businessId', 'name')
+      .populate('queueId', 'name');
     
-    console.log('Registration request body:', req.body);
-    console.log('Phone value:', phone, 'Type:', typeof phone);
-
-
-    // Check if user already exists
-    const existing = await User.findOne({ email });
-    const existingPhone = await User.findOne({ phone });
-    if (existing) {
-      return res.status(400).json({
-        status: "fail",
-        message: "Email already in use",
-      });
-    }
-    if (existingPhone) {
-      return res.status(400).json({
-        status: "fail",
-        message: "Phone already in use",
-      });
-    }
-
-    // Create new user
-    const user = await User.create({
-      name,
-      email,
-      password,
-      phone,
-      role: "user",
-    });
-
-    // Create token payload
-    const payload = {
-      id: user._id.toString(),
-      role: user.role,
-    };
-
-    await createSendTokens({ entity: user, res, payload });
-  } catch (err) {
-    console.error("Register error:", err);
-    res.status(500).json({
-      status: "error",
-      message: err.message,
-    });
-  }
-};
-
-// ----------------- Register Business -----------------
-exports.registerBusiness = async (req, res) => {
-  try {
-    const { 
-      name, 
-      email, 
-      password,
-      mobilePhone,
-      landlinePhone,
-      address,
-      paymentMethod,
-      specialization,
-      profileImage,
-      businessImages,
-      workingHours,
-      service,
-      queueSettings
-    } = req.body;
-
-    console.log('Backend received:', req.body);
-    console.log('Extracted values:', { mobilePhone, landlinePhone, address, paymentMethod });
-
-    // Check if business already exists
-    const existing = await Business.findOne({ email });
-    if (existing) {
-      return res.status(400).json({
-        status: "fail",
-        message: "Business email already in use",
-      });
-    }
-
-    // Prepare business data
-    const businessData = {
-      name,
-      email,
-      password,
-      mobilePhone,
-      landlinePhone,
-      address,
-      paymentMethod,
-      role: "business",
-    };
-
-    // Add optional fields if provided
-    if (specialization) businessData.specialization = specialization;
-    if (profileImage) businessData.profileImage = profileImage;
-    if (businessImages && businessImages.length > 0) businessData.businessImages = businessImages;
-    if (workingHours) businessData.workingHours = workingHours;
-    if (service) businessData.service = service;
-    if (queueSettings) businessData.queueSettings = queueSettings;
-
-    // Create new business
-    const business = await Business.create(businessData);
-
-    // Auto-generate embeddings for the new business
-    // We import this dynamically or move the require to top if not present
-    const { generateBusinessEmbeddings } = require("../utils/embeddingService");
-    
-    generateBusinessEmbeddings(business)
-      .then(async (embeddings) => {
-        if (embeddings && Object.keys(embeddings).length > 0) {
-          await Business.findByIdAndUpdate(business._id, embeddings);
-          console.log(`✅ Auto-generated embeddings for new business: ${business.name}`);
-        }
-      })
-      .catch((err) => {
-        console.error('⚠️ Error auto-generating embeddings:', err);
-      });
-
-    const payload = {
-      id: business._id.toString(),
-      role: business.role,
-    };
-
-    await createSendTokens({ entity: business, res, payload });
-  } catch (err) {
-    console.error("Register business error:", err);
-    res.status(500).json({
-      status: "error",
-      message: err.message,
-    });
-  }
-};
-
-// ----------------- Google OAuth Callback -----------------
-exports.googleCallback = async (req, res) => {
-  try {
-    // req.user is set by passport.authenticate
-    if (!req.user) {
-      // Redirect to login page with error
-      const frontendURL = process.env.FRONTEND_URL || 'http://localhost:3000';
-      return res.redirect(`${frontendURL}/login?error=auth_failed`);
-    }
-
-    // Create tokens for the user
-    const payload = {
-      id: req.user._id.toString(),
-      role: req.user.role || "user",
-    };
-
-    // Create tokens
-    const accessToken = signJwt(payload);
-    const refreshTokenRaw = signRefreshToken(payload);
-
-    // Store hashed refresh token in DB
-    const hashed = hashToken(refreshTokenRaw);
-    const expiresAt = new Date(
-      Date.now() + parseDuration(process.env.JWT_REFRESH_EXPIRES_IN || "7d"),
-    );
-
-    req.user.refreshTokens = req.user.refreshTokens || [];
-    req.user.refreshTokens.push({
-      token: hashed,
-      createdAt: Date.now(),
-      expiresAt,
-    });
-
-    await req.user.save({ validateBeforeSave: false });
-
-    // Set httpOnly cookies
-    // Always use sameSite: 'none' and secure: true for cross-origin deployments
-    const cookieOptions = {
-      httpOnly: true,
-      secure: true,
-      sameSite: 'none',
-    };
-
-    res.cookie("refreshToken", refreshTokenRaw, {
-      ...cookieOptions,
-      maxAge: parseDuration(process.env.JWT_REFRESH_EXPIRES_IN || "7d"),
-    });
-
-    res.cookie("accessToken", accessToken, {
-      ...cookieOptions,
-      maxAge: parseDuration(process.env.JWT_EXPIRES_IN || "15m"),
-    });
-
-    // Redirect to frontend dashboard based on role
-    const frontendURL = process.env.FRONTEND_URL || 'http://localhost:3000';
-    const redirectPath = req.user.role === 'business' ? '/business' : '/user';
-    
-    res.redirect(`${frontendURL}${redirectPath}`);
-  } catch (err) {
-    console.error("Google callback error:", err);
-    const frontendURL = process.env.FRONTEND_URL || 'http://localhost:3000';
-    res.redirect(`${frontendURL}/login?error=server_error`);
-  }
-};
-
-// ----------------- Login (User or Business) -----------------
-exports.login = async (req, res) => {
-  try {
-    const { email, password } = req.body;
-
-    if (!email || !password) {
-      return res.status(400).json({
-        status: "fail",
-        message: "Provide email and password",
-      });
-    }
-
-    // Try user first
-    let user = await User.findOne({ email }).select("+password +refreshTokens");
-    let entityType = "user";
-
-    // If not user, try business
-    if (!user) {
-      user = await Business.findOne({ email }).select(
-        "+password +refreshTokens",
-      );
-      entityType = "business";
-    }
-
-    // If not business, try admin
-    if (!user) {
-      const Admin = require("../models/adminSchema");
-      user = await Admin.findOne({ email }).select("+password");
-      entityType = "admin";
-    }
-
-    console.log(`Login attempt for email=${email} matched entityType=${entityType} userExists=${!!user}`);
-
-    if (!user) {
-      return res.status(401).json({
-        status: "fail",
-        message: "Invalid credentials",
-      });
-    }
-
-    // Check password - try correctPassword method first, fallback to bcrypt
-    console.log('has correctPassword method?', typeof user.correctPassword === 'function');
-    let correct;
-    if (typeof user.correctPassword === "function") {
-      correct = await user.correctPassword(password, user.password);
-    } else {
-      correct = await bcrypt.compare(password, user.password);
-    }
-
-    console.log(`Password comparison result for ${email}: ${correct}`);
-
-    if (!correct) {
-      return res.status(401).json({
-        status: "fail",
-        message: "Invalid credentials",
-      });
-    }
-
-    // Create token payload
-    const payload = {
-      id: user._id.toString(),
-      role: user.role || entityType,
-    };
-
-    // Send tokens
-    await createSendTokens({ entity: user, res, payload });
-  } catch (err) {
-    console.error("Login error:", err);
-    res.status(500).json({
-      status: "error",
-      message: err.message,
-    });
-  }
-};
-
-// DEV only: set or create admin password (requires DEV_ADMIN_SECRET env var)
-exports.setAdminPasswordDev = async (req, res) => {
-  try {
-    const secret = req.headers['x-dev-secret'] || req.body.secret;
-    if (!process.env.DEV_ADMIN_SECRET || secret !== process.env.DEV_ADMIN_SECRET) {
-      return res.status(403).json({ status: 'fail', message: 'Forbidden' });
-    }
-
-    const { email, password, name } = req.body;
-    if (!email || !password) {
-      return res.status(400).json({ status: 'fail', message: 'email and password required' });
-    }
-
-    const Admin = require('../models/adminSchema');
-    const bcrypt = require('bcryptjs');
-    const hashed = await bcrypt.hash(password, 12);
-
-    let admin = await Admin.findOne({ email }).select('+password');
-    if (admin) {
-      admin.password = hashed;
-      await admin.save();
-      return res.status(200).json({ status: 'success', message: 'Admin password updated' });
-    }
-
-    admin = new Admin({ name: name || 'Admin', email, password: hashed });
-    await admin.save();
-    return res.status(201).json({ status: 'success', message: 'Admin created' });
-  } catch (err) {
-    console.error('setAdminPasswordDev error:', err);
-    return res.status(500).json({ status: 'error', message: err.message });
-  }
-};
-
-// ----------------- Refresh Token -----------------
-exports.refreshToken = async (req, res) => {
-  try {
-    // Try cookie first, then body
-    const refreshTokenRaw = req.cookies?.refreshToken || req.body.refreshToken;
-    if (!refreshTokenRaw) {
-      return res.status(401).json({
-        status: "fail",
-        message: "No refresh token provided",
-      });
-    }
-
-    // Verify signature using refresh secret
-    const refreshSecret =
-      process.env.JWT_REFRESH_SECRET || process.env.JWT_SECRET + "-refresh";
-    const decoded = jwt.verify(refreshTokenRaw, refreshSecret);
-
-    const userId = decoded.id || decoded.userId;
-    if (!userId) {
-      return res.status(401).json({
-        status: "fail",
-        message: "Invalid token payload",
-      });
-    }
-
-    // Find user in Users or Businesses
-    let entity = await User.findById(userId).select("+refreshTokens");
-    if (!entity) {
-      entity = await Business.findById(userId).select("+refreshTokens");
-    }
-
-    if (!entity) {
-      return res.status(401).json({
-        status: "fail",
-        message: "User no longer exists",
-      });
-    }
-
-    // Check hashed token existence and expiry
-    const hashed = hashToken(refreshTokenRaw);
-    const found = (entity.refreshTokens || []).find(
-      (rt) => rt.token === hashed && new Date(rt.expiresAt) > Date.now(),
-    );
-
-    if (!found) {
-      return res.status(401).json({
-        status: "fail",
-        message: "Refresh token invalid or expired",
-      });
-    }
-
-    // Issue new access token
-    const payload = {
-      id: entity._id.toString(),
-      role: entity.role,
-    };
-    const accessToken = signJwt(payload);
-
-    res.status(200).json({
-      status: "success",
-      accessToken,
-      expiresIn: process.env.JWT_EXPIRES_IN || "15m",
-    });
-  } catch (err) {
-    console.error("Refresh token error:", err);
-    return res.status(401).json({
-      status: "fail",
-      message: "Refresh token invalid or expired",
-    });
-  }
-};
-
-// ----------------- Logout -----------------
-exports.logout = async (req, res) => {
-  try {
-    const refreshTokenRaw = req.cookies?.refreshToken || req.body.refreshToken;
-
-    if (refreshTokenRaw) {
-      const hashed = hashToken(refreshTokenRaw);
-
-      // Remove hashed refresh token from users and businesses
-      await User.updateMany(
-        {},
-        { $pull: { refreshTokens: { token: hashed } } },
-      );
-      await Business.updateMany(
-        {},
-        { $pull: { refreshTokens: { token: hashed } } },
-      );
-    }
-
-    // Clear cookies - must use same options as when setting them for cross-origin
-    const cookieOptions = {
-      httpOnly: true,
-      secure: true,
-      sameSite: 'none',
-    };
-    res.clearCookie("refreshToken", cookieOptions);
-    res.clearCookie("accessToken", cookieOptions);
-
-    res.status(200).json({
-      status: "success",
-      message: "Logged out successfully",
-    });
-  } catch (err) {
-    console.error("Logout error:", err);
-    res.status(500).json({
-      status: "error",
-      message: err.message,
-    });
-  }
-};
-
-// ----------------- Forgot Password -----------------
-exports.forgotPassword = async (req, res) => {
-  try {
-    const { email } = req.body;
-
-    // Find user or business
-    let user = await User.findOne({ email });
-    let model = "User";
-
-    if (!user) {
-      user = await Business.findOne({ email });
-      model = "Business";
-    }
-
-    if (!user) {
+    if (!ticket) {
       return res.status(404).json({
         status: "fail",
-        message: "No account with that email",
+        message: "Ticket not found",
       });
     }
 
-    // Generate 6-digit OTP
-    const otp = Math.floor(100000 + Math.random() * 900000).toString();
-
-    // Set OTP and expiry (10 minutes)
-    user.passwordResetToken = otp;
-    user.passwordResetExpires = Date.now() + 10 * 60 * 1000;
-
-    await user.save({ validateBeforeSave: false });
-
-    // Send OTP via email
-    try {
-      await sendOTPEmail({
-        email: user.email,
-        otp,
-        name: user.name,
+    // Verify user owns the ticket
+    if (ticket.userId.toString() !== req.user.id) {
+      return res.status(403).json({
+        status: "fail",
+        message: "Not authorized",
       });
+    }
 
-      res.status(200).json({
-        status: "success",
-        message: `Password reset OTP has been sent to ${email}`,
+    const stripe = getStripe();
+
+    // Create Stripe Checkout Session
+    const frontendURL = process.env.FRONTEND_URL || 'http://localhost:3000';
+    const session = await stripe.checkout.sessions.create({
+      payment_method_types: ["card"],
+      mode: "payment",
+      success_url: `${frontendURL}/payment/success?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${frontendURL}/payment/cancel`,
+      customer_email: req.user.email,
+      client_reference_id: ticketId,
+      line_items: [
+        {
+          price_data: {
+            currency: process.env.PAYMENT_CURRENCY || "usd",
+            product_data: {
+              name: `Queue Ticket - ${ticket.businessId?.name || 'Business'}`,
+              description: `Ticket #${ticket.ticketNumber} for ${ticket.queueId?.name || 'Queue'}`,
+            },
+            unit_amount: Math.round((ticket.estimatedPrice || 10) * 100), // amount in cents
+          },
+          quantity: 1,
+        },
+      ],
+      metadata: {
+        ticketId: ticketId.toString(),
+        userId: req.user.id.toString(),
+        businessId: ticket.businessId?._id.toString() || "",
+        queueId: ticket.queueId?._id.toString() || "",
+      },
+    });
+
+    res.status(200).json({
+      status: "success",
+      sessionUrl: session.url,
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+// -------------------------
+// POST /api/v1/payments
+// Create payment
+// -------------------------
+exports.createPayment = async (req, res) => {
+  try {
+    const { ticketId, amount, paymentMethod, paymentMethodId } = req.body;
+
+    if (!ticketId || !amount || !paymentMethod) {
+      return res.status(400).json({
+        success: false,
+        message: "Please provide ticketId, amount, and paymentMethod",
       });
-    } catch (emailError) {
-      console.error("Email sending failed:", emailError);
-      
-      // If email fails, still return success but log OTP for development
-      if (process.env.NODE_ENV === "development") {
-        console.log("📧 Development OTP:", otp);
-        return res.status(200).json({
-          status: "success",
-          message: `Email service unavailable. OTP logged to console.`,
-          otp, // Only in development when email fails
+    }
+
+    // Verify ticket exists
+    const ticket = await Ticket.findById(ticketId);
+    if (!ticket) {
+      return res.status(404).json({
+        success: false,
+        message: "Ticket not found",
+      });
+    }
+
+    // Verify user owns the ticket
+    if (ticket.userId.toString() !== req.user.id) {
+      return res.status(403).json({
+        success: false,
+        message: "Not authorized",
+      });
+    }
+
+    // Verify business supports this payment method
+    const business = await require("../models/businessSchema").findById(ticket.businessId);
+    if (!business) {
+        return res.status(404).json({
+            success: false,
+            message: "Business not found"
+        });
+    }
+
+    // Check if payment method is accepted
+    // Handle both array and string formats of business.paymentMethod
+    const acceptedMethods = Array.isArray(business.paymentMethod) 
+        ? business.paymentMethod 
+        : [business.paymentMethod];
+        
+    // Allow 'card' if 'credit-card' is in accepted methods, and vice versa
+    const normalizedMethod = paymentMethod === 'credit-card' ? 'card' : paymentMethod;
+    const isAccepted = acceptedMethods.some(m => {
+        const normalizedAccepted = m === 'credit-card' ? 'card' : m;
+        return normalizedAccepted === normalizedMethod || normalizedAccepted === 'both';
+    });
+
+    if (!isAccepted) {
+        return res.status(400).json({
+            success: false,
+            message: `Payment method '${paymentMethod}' is not accepted by this business`
+        });
+    }
+
+    let stripePaymentIntent = null;
+    let transactionId = `TXN-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    let status = 'pending';
+
+    // If using Stripe (card payment)
+    if (paymentMethod === "card" && paymentMethodId) {
+      try {
+        // Create Stripe Payment Intent
+        stripePaymentIntent = await stripe.paymentIntents.create({
+          amount: Math.round(amount * 100), // Stripe uses cents
+          currency: process.env.PAYMENT_CURRENCY || "usd",
+          payment_method: paymentMethodId,
+          confirm: true,
+          metadata: {
+            ticketId: ticketId,
+            userId: req.user.id,
+            businessId: ticket.businessId.toString(),
+          },
+        });
+
+        transactionId = stripePaymentIntent.id;
+        status = 'completed';
+      } catch (stripeError) {
+        return res.status(400).json({
+          success: false,
+          message: "Payment failed: " + stripeError.message,
         });
       }
-      
-      // In production, clear the OTP if email fails
-      user.passwordResetToken = undefined;
-      user.passwordResetExpires = undefined;
-      await user.save({ validateBeforeSave: false });
-      
-      return res.status(500).json({
-        status: "error",
-        message: "Failed to send password reset email. Please try again later.",
-      });
+    } else if (paymentMethod === 'cash') {
+        status = 'pending';
     }
-  } catch (err) {
-    console.error("Forgot password error:", err);
+
+    // Create payment record
+    const payment = await Payment.create({
+      userId: req.user.id,
+      ticketId,
+      businessId: ticket.businessId,
+      amount,
+      paymentMethod,
+      status: status,
+      transactionId,
+      stripePaymentIntentId: stripePaymentIntent?.id,
+    });
+
+    // Update ticket payment status if completed (or pending/cash payment logic)
+    // For pending payments, we might keep ticket as 'unpaid' until confirmed, 
+    // BUT usually 'cash' means ticket is booked and pay later.
+    // If status is completed, mark ticket paid.
+    if (status === 'completed') {
+        ticket.paymentStatus = "paid";
+    }
+    // For now, let's allow ticket saving. 
+    // If ticket schema requires 'paid' for something, this might be relevant.
+    // Assuming ticket is created 'active' or 'booked'.
+    
+    await ticket.save();
+
+    // ------------------------------------------
+    // NOTIFICATION (Direct Payment)
+    // ------------------------------------------
+    try {
+      if (req.user) {
+         await Notification.create({
+             userId: req.user.id,
+             businessId: ticket.businessId,
+             ticketId: ticketId,
+             paymentId: payment._id,
+             type: 'payment',
+             message: `Payment of $${amount} successful for Ticket #${ticket.ticketNumber}`,
+         });
+         
+         if (req.user.email) {
+           await sendNotificationEmail({
+              email: req.user.email,
+              name: req.user.name,
+              subject: "Payment Receipt 💳",
+              message: `Your payment of $${amount} for Ticket #${ticket.ticketNumber} was successful.`,
+              type: 'payment'
+           });
+         }
+      }
+      
+      const socketIO = req.app.get("socketIO");
+      if (socketIO && !req.body.suppressUserSocket) {
+         socketIO.emitToUser(req.user.id, 'paymentUpdate', {
+             status: 'success',
+             message: `Payment of $${amount} successful`,
+             ticketId: ticketId
+         });
+      }
+    } catch (e) { console.log('Notification error:', e); }
+
+    res.status(201).json({
+      success: true,
+      message: "Payment created successfully",
+      data: {
+        payment,
+        clientSecret: stripePaymentIntent?.client_secret,
+      },
+    });
+  } catch (error) {
+    console.error("Create payment error:", error);
     res.status(500).json({
-      status: "error",
-      message: err.message,
+      success: false,
+      message: "Error creating payment",
     });
   }
 };
 
-// ----------------- Reset Password -----------------
-exports.resetPassword = async (req, res) => {
+// -------------------------
+// GET /api/v1/payments/:id
+// Get payment by ID
+// -------------------------
+exports.getPaymentById = async (req, res) => {
   try {
-    const otp = req.params.otp; // OTP from URL parameter
-    const { password } = req.body;
+    const payment = await Payment.findById(req.params.id)
+      .populate("userId", "name email")
+      .populate("businessId", "name")
+      .populate("ticketId");
 
-    // Find user/business with valid OTP
-    let user = await User.findOne({
-      passwordResetToken: otp,
-      passwordResetExpires: { $gt: Date.now() },
-    }).select("+password");
-
-    if (!user) {
-      user = await Business.findOne({
-        passwordResetToken: otp,
-        passwordResetExpires: { $gt: Date.now() },
-      }).select("+password");
+    if (!payment) {
+      return res.status(404).json({
+        success: false,
+        message: "Payment not found",
+      });
     }
 
-    if (!user) {
+    // Check authorization
+    if (
+      payment.userId._id.toString() !== req.user.id &&
+      req.user.role !== "admin"
+    ) {
+      return res.status(403).json({
+        success: false,
+        message: "Not authorized",
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      data: payment,
+    });
+  } catch (error) {
+    console.error("Get payment error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Error retrieving payment",
+    });
+  }
+};
+
+// -------------------------
+// GET /api/v1/payments
+// Get all payments (admin only)
+// -------------------------
+exports.getAllPayments = async (req, res) => {
+  try {
+    const {
+      userId,
+      businessId,
+      status,
+      from,
+      to,
+      page = 1,
+      limit = 10,
+    } = req.query;
+
+    const query = {};
+    if (userId) query.userId = userId;
+    if (businessId) query.businessId = businessId;
+    if (status) query.status = status;
+    if (from || to) {
+      query.createdAt = {};
+      if (from) query.createdAt.$gte = new Date(from);
+      if (to) query.createdAt.$lte = new Date(to);
+    }
+
+    const skip = (page - 1) * limit;
+
+    const [payments, total] = await Promise.all([
+      Payment.find(query)
+        .populate("userId", "name email")
+        .populate("businessId", "name")
+        .skip(skip)
+        .limit(Number(limit))
+        .sort({ createdAt: -1 }),
+      Payment.countDocuments(query),
+    ]);
+
+    res.status(200).json({
+      success: true,
+      data: {
+        payments,
+        pagination: {
+          page: Number(page),
+          limit: Number(limit),
+          total,
+          pages: Math.ceil(total / limit),
+        },
+      },
+    });
+  } catch (error) {
+    console.error("Get all payments error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Error retrieving payments",
+    });
+  }
+};
+
+// -------------------------
+// GET /api/v1/users/me/payments
+// Get user's payment history
+// -------------------------
+exports.getUserPayments = async (req, res) => {
+  try {
+    const { status, from, to, page = 1, limit = 10 } = req.query;
+
+    const query = { userId: req.user.id };
+    if (status) query.status = status;
+    if (from || to) {
+      query.createdAt = {};
+      if (from) query.createdAt.$gte = new Date(from);
+      if (to) query.createdAt.$lte = new Date(to);
+    }
+
+    const skip = (page - 1) * limit;
+
+    const [payments, total] = await Promise.all([
+      Payment.find(query)
+        .populate("businessId", "name profileImage")
+        .populate("ticketId")
+        .skip(skip)
+        .limit(Number(limit))
+        .sort({ createdAt: -1 }),
+      Payment.countDocuments(query),
+    ]);
+
+    res.status(200).json({
+      success: true,
+      data: {
+        payments,
+        pagination: {
+          page: Number(page),
+          limit: Number(limit),
+          total,
+          pages: Math.ceil(total / limit),
+        },
+      },
+    });
+  } catch (error) {
+    console.error("Get user payments error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Error retrieving payments",
+    });
+  }
+};
+
+// -------------------------
+// GET /api/v1/businesses/:businessId/payments
+// Get business payments (owner only)
+// -------------------------
+exports.getBusinessPayments = async (req, res) => {
+  try {
+    const { status, from, to, page = 1, limit = 10 } = req.query;
+    const { businessId } = req.params;
+
+    const query = { businessId };
+    if (status) query.status = status;
+    if (from || to) {
+      query.createdAt = {};
+      if (from) query.createdAt.$gte = new Date(from);
+      if (to) query.createdAt.$lte = new Date(to);
+    }
+
+    const skip = (page - 1) * limit;
+
+    const [payments, total] = await Promise.all([
+      Payment.find(query)
+        .populate("userId", "name email")
+        .populate("ticketId")
+        .skip(skip)
+        .limit(Number(limit))
+        .sort({ createdAt: -1 }),
+      Payment.countDocuments(query),
+    ]);
+
+    res.status(200).json({
+      success: true,
+      data: {
+        payments,
+        pagination: {
+          page: Number(page),
+          limit: Number(limit),
+          total,
+          pages: Math.ceil(total / limit),
+        },
+      },
+    });
+  } catch (error) {
+    console.error("Get business payments error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Error retrieving business payments",
+    });
+  }
+};
+
+// -------------------------
+// POST /api/v1/payments/:id/refund
+// Refund payment
+// -------------------------
+exports.refundPayment = async (req, res) => {
+  try {
+    const { reason, amount } = req.body;
+    const payment = await Payment.findById(req.params.id);
+
+    if (!payment) {
+      return res.status(404).json({
+        success: false,
+        message: "Payment not found",
+      });
+    }
+
+    if (payment.status === "refunded") {
       return res.status(400).json({
-        status: "fail",
-        message: "OTP is invalid or has expired",
+        success: false,
+        message: "Payment already refunded",
       });
     }
 
+    const refundAmount = amount || payment.amount;
+
+    if (refundAmount > payment.amount) {
+      return res.status(400).json({
+        success: false,
+        message: "Refund amount cannot exceed payment amount",
+      });
+    }
+
+    // Process Stripe refund if payment was made via Stripe
+    if (payment.stripePaymentIntentId) {
+      try {
+        const refund = await stripe.refunds.create({
+          payment_intent: payment.stripePaymentIntentId,
+          amount: Math.round(refundAmount * 100), // Stripe uses cents
+          reason: reason || "requested_by_customer",
+        });
+
+        payment.stripeRefundId = refund.id;
+      } catch (stripeError) {
+        return res.status(400).json({
+          success: false,
+          message: "Stripe refund failed: " + stripeError.message,
+        });
+      }
+    }
+
+    payment.status = "refunded";
+    payment.refundAmount = refundAmount;
+    payment.refundReason = reason;
+    payment.refundDate = new Date();
+    await payment.save();
+
+    // Update ticket payment status
+    if (payment.ticketId) {
+      await Ticket.findByIdAndUpdate(payment.ticketId, {
+        paymentStatus: "refunded",
+      });
+    }
 
     res.status(200).json({
-      status: "success",
-      message: "OTP is valid",
+      success: true,
+      message: "Payment refunded successfully",
+      data: payment,
     });
-    // Update password and clear reset fields
-    user.password = password;
-    user.passwordResetToken = undefined;
-    user.passwordResetExpires = undefined;
-    user.passwordChangedAt = Date.now();
-
-    await user.save();
-
-    // Log the user in (issue new tokens)
-    const payload = {
-      id: user._id.toString(),
-      role: user.role,
-    };
-
-    await createSendTokens({ entity: user, res, payload });
-  } catch (err) {
-    console.error("Reset password error:", err);
+  } catch (error) {
+    console.error("Refund payment error:", error);
     res.status(500).json({
-      status: "error",
-      message: err.message,
+      success: false,
+      message: "Error processing refund",
     });
   }
 };
 
-// ----------------- Get Current User -----------------
-exports.getMe = async (req, res) => {
+// -------------------------
+// GET /api/v1/payments/:id/receipt
+// Get payment receipt
+// -------------------------
+exports.getReceipt = async (req, res) => {
   try {
-    // User should already be attached by the 'protect' middleware
-    if (!req.user) {
-      return res.status(401).json({
-        status: "fail",
-        message: "Not authenticated",
+    const payment = await Payment.findById(req.params.id)
+      .populate("userId", "name email phone")
+      .populate("businessId", "name address phone")
+      .populate("ticketId");
+
+    if (!payment) {
+      return res.status(404).json({
+        success: false,
+        message: "Payment not found",
       });
     }
 
-    // Return user data (already sanitized by protect middleware)
+    // Check authorization
+    if (
+      payment.userId._id.toString() !== req.user.id &&
+      req.user.role !== "admin"
+    ) {
+      return res.status(403).json({
+        success: false,
+        message: "Not authorized",
+      });
+    }
+
+    // TODO: Generate PDF receipt
+    // For now, return receipt data
     res.status(200).json({
-      status: "success",
-      data: req.user,
+      success: true,
+      data: {
+        receiptNumber: payment.transactionId,
+        date: payment.createdAt,
+        customer: payment.userId,
+        business: payment.businessId,
+        ticket: payment.ticketId,
+        amount: payment.amount,
+        paymentMethod: payment.paymentMethod,
+        status: payment.status,
+      },
     });
-  } catch (err) {
-    console.error("Get me error:", err);
+  } catch (error) {
+    console.error("Get receipt error:", error);
     res.status(500).json({
-      status: "error",
-      message: err.message,
+      success: false,
+      message: "Error retrieving receipt",
     });
   }
 };
 
-// ----------------- Update Password -----------------
-exports.updatePassword = async (req, res) => {
+// -------------------------
+// POST /api/v1/payments/webhook/stripe
+// Get webhook from stripe when payment is successful
+// Create payment records in DB
+// -------------------------
+exports.stripeWebhook = async (req, res) => {
+  let event;
   try {
-    const { currentPassword, newPassword } = req.body;
-
-    if (!req.user) {
-      return res.status(401).json({
-        status: "fail",
-        message: "Not authenticated",
-      });
-    }
-
-    // Find full user/business document with password
-    let entity = await User.findById(req.user.id).select(
-      "+password +refreshTokens",
+    const stripe = getStripe();
+    const signature = req.headers["stripe-signature"];
+    event = stripe.webhooks.constructEvent(
+      req.body,
+      signature,
+      process.env.STRIPE_WEBHOOK_SECRET
     );
-    if (!entity) {
-      entity = await Business.findById(req.user.id).select(
-        "+password +refreshTokens",
-      );
-    }
-
-    if (!entity) {
-      return res.status(404).json({
-        status: "fail",
-        message: "User not found",
-      });
-    }
-
-    // Verify current password
-    let correct;
-    if (typeof entity.correctPassword === "function") {
-      correct = await entity.correctPassword(currentPassword, entity.password);
-    } else {
-      correct = await bcrypt.compare(currentPassword, entity.password);
-    }
-
-    if (!correct) {
-      return res.status(401).json({
-        status: "fail",
-        message: "Your current password is incorrect",
-      });
-    }
-
-    // Update password
-    entity.password = newPassword;
-    entity.passwordChangedAt = Date.now();
-
-    // Optional: Clear all refresh tokens to force logout everywhere
-    entity.refreshTokens = [];
-
-    await entity.save();
-
-    // Issue new tokens
-    const payload = {
-      id: entity._id.toString(),
-      role: entity.role,
-    };
-
-    await createSendTokens({ entity, res, payload });
+    console.log("Webhook verified:", event.type);
   } catch (err) {
-    console.error("Update password error:", err);
-    res.status(500).json({
-      status: "error",
-      message: err.message,
+    console.error("Webhook signature verification failed:", err.message);
+    return res.status(400).send(`Webhook Error: ${err.message}`);
+  }
+
+  try {
+    if (event.type === "checkout.session.completed") {
+      const session = event.data.object;
+      const metadata = session.metadata || {};
+      const userId = metadata.userId;
+      const ticketId = session.client_reference_id || metadata.ticketId;
+      const businessId = metadata.businessId;
+      const queueId = metadata.queueId;
+      const amountPaid = session.amount_total / 100; // Convert from cents
+
+      // Find the ticket
+      const ticket = await Ticket.findById(ticketId);
+      if (!ticket) {
+        console.error("Ticket not found for webhook session:", ticketId);
+        return res.status(400).send("Ticket not found");
+      }
+
+      // Check for duplicate payment to prevent double-processing
+      const existingPayment = await Payment.findOne({
+        ticketId: ticket._id,
+        status: "completed",
+        amount: amountPaid,
+      });
+
+      if (existingPayment) {
+        console.log("Duplicate payment ignored for ticket:", ticketId);
+        return res.status(200).json({ received: true });
+      }
+
+      // Create payment record
+      await Payment.create({
+        userId: userId,
+        ticketId: ticketId,
+        businessId: businessId,
+        amount: amountPaid,
+        paymentMethod: "card",
+        status: "completed",
+        transactionId: session.payment_intent,
+        stripePaymentIntentId: session.payment_intent,
+        paidAt: new Date(),
+      });
+
+      // Update ticket payment status
+      ticket.paymentStatus = "paid";
+      let newlyConfirmed = false;
+      if (ticket.status === 'pending_payment') {
+         ticket.status = 'waiting';
+         newlyConfirmed = true;
+      }
+      await ticket.save();
+
+      console.log("Checkout session completed:", session.id);
+      
+      const socketIO = req.app.get("socketIO");
+      if (socketIO) {
+          socketIO.emitTicketUpdated(businessId, ticket);
+          if (newlyConfirmed) {
+              socketIO.emitTicketCreated(businessId, ticket);
+          }
+      }
+      
+      // ------------------------------------------
+      // NOTIFICATION (Webhook Payment)
+      // ------------------------------------------
+      try {
+        const user = await User.findById(userId);
+        if (user) {
+             await Notification.create({
+                 userId: userId,
+                 businessId: businessId,
+                 ticketId: ticketId,
+                 // paymentId: payment._id, // payment variable not easily accessible here unless captured from create
+                 type: 'payment',
+                 message: `Payment successful for Ticket #${ticket.ticketNumber}`,
+             });
+
+             if (user.email) {
+                 await sendNotificationEmail({
+                     email: user.email,
+                     name: user.name,
+                     subject: "Payment Confirmed 💳",
+                     message: `Your payment of $${amountPaid} for Ticket #${ticket.ticketNumber} was successful.`,
+                     type: 'payment'
+                 });
+             }
+             
+
+             /*
+             if (socketIO) {
+                socketIO.emitToUser(userId, 'paymentUpdate', {
+                    status: 'success',
+                    message: `Payment of $${amountPaid} successful`,
+                    ticketId: ticketId
+                });
+             }
+             */
+         }
+      } catch (e) { console.error('Webhook Notification Error:', e); }
+    }
+
+    res.status(200).json({ received: true });
+  } catch (err) {
+    console.error("Error processing webhook event:", err);
+    res.status(400).send(`Webhook Internal Error: ${err.message}`);
+  }
+};
+
+// -------------------------
+// Legacy webhook handlers for other payment methods
+// -------------------------
+exports.stripeWebhookLegacy = async (req, res) => {
+  try {
+    const stripe = getStripe();
+    const sig = req.headers["stripe-signature"];
+    let event;
+
+    try {
+      event = stripe.webhooks.constructEvent(
+        req.body,
+        sig,
+        process.env.STRIPE_WEBHOOK_SECRET
+      );
+    } catch (err) {
+      console.error("Webhook signature verification failed:", err.message);
+      return res.status(400).send(`Webhook Error: ${err.message}`);
+    }
+
+    // Handle different event types
+    switch (event.type) {
+
+      case "payment_intent.succeeded":
+        const paymentIntent = event.data.object;
+        
+        // Update payment status in database
+        await Payment.findOneAndUpdate(
+          { stripePaymentIntentId: paymentIntent.id },
+          { 
+            status: "completed",
+            paidAt: new Date(),
+          }
+        );
+        
+        console.log("Payment succeeded:", paymentIntent.id);
+        break;
+
+      case "payment_intent.payment_failed":
+        const failedPayment = event.data.object;
+        
+        // Update payment status to failed
+        await Payment.findOneAndUpdate(
+          { stripePaymentIntentId: failedPayment.id },
+          { status: "failed" }
+        );
+        
+        console.log("Payment failed:", failedPayment.id);
+        break;
+
+      case "charge.refunded":
+        const refund = event.data.object;
+        
+        // Update payment status to refunded
+        await Payment.findOneAndUpdate(
+          { stripePaymentIntentId: refund.payment_intent },
+          { 
+            status: "refunded",
+            refundDate: new Date(),
+          }
+        );
+        
+        console.log("Charge refunded:", refund.id);
+        break;
+
+      default:
+        console.log(`Unhandled event type: ${event.type}`);
+    }
+
+    res.status(200).json({ received: true });
+  } catch (error) {
+    console.error("Stripe webhook error:", error);
+    res.status(400).json({
+      success: false,
+      message: "Webhook error",
     });
   }
 };
-exports.resendVerification = async (req, res) => {
-  try {
-    const { email } = req.body;
 
-    if (!email) {
+// -------------------------
+// POST /api/v1/payments/verify
+// Verify payment status
+// -------------------------
+exports.verifyPayment = async (req, res) => {
+  try {
+    const { paymentId, transactionId } = req.body;
+
+    if (!paymentId || !transactionId) {
       return res.status(400).json({
         success: false,
-        message: "Email is required",
+        message: "Please provide paymentId and transactionId",
       });
     }
 
-    const user = await User.findOne({ email: email.toLowerCase() });
+    const payment = await Payment.findOne({
+      _id: paymentId,
+      transactionId,
+    });
 
-    if (!user) {
+    if (!payment) {
       return res.status(404).json({
         success: false,
-        message: "User not found",
+        message: "Payment not found",
       });
     }
 
-    if (user.isEmailVerified) {
-      return res.status(400).json({
-        success: false,
-        message: "Email is already verified",
-      });
-    }
-
-    // Generate new verification token
-    user.verificationToken = crypto.randomBytes(32).toString("hex");
-    await user.save();
-
-    // TODO: Send verification email
-    // await sendEmail({ to: user.email, subject: 'Verify Email', token: user.verificationToken });
-
+    // TODO: Verify with payment gateway
+    // For now, just return payment status
     res.status(200).json({
       success: true,
-      message: "Verification email sent",
-      // For development only
-      verificationToken:
-        process.env.NODE_ENV === "development"
-          ? user.verificationToken
-          : undefined,
+      data: {
+        verified: true,
+        status: payment.status,
+        amount: payment.amount,
+        transactionId: payment.transactionId,
+      },
     });
   } catch (error) {
-    console.error("Resend verification error:", error);
     res.status(500).json({
       success: false,
-      message: "Error resending verification",
+      message: "Error verifying payment",
     });
   }
 };
 
-exports.verifyEmail = async (req, res) => {
+// -------------------------
+// POST /api/v1/payments/confirm-session
+// Manually confirm Stripe session (Fallback for webhooks)
+// -------------------------
+exports.confirmSession = async (req, res) => {
   try {
-    const { token } = req.body;
+    const { session_id } = req.body;
+    if (!session_id) return res.status(400).json({ success: false, message: "Session ID required" });
 
-    if (!token) {
-      return res.status(400).json({
-        success: false,
-        message: "Verification token is required",
-      });
+    const stripe = getStripe();
+    const session = await stripe.checkout.sessions.retrieve(session_id);
+
+    if (session.payment_status === 'paid') {
+       const ticketId = session.client_reference_id || session.metadata.ticketId;
+       const userId = session.metadata.userId;
+       const businessId = session.metadata.businessId;
+       const amountPaid = session.amount_total / 100;
+
+       // Verify Ticket
+       const ticket = await Ticket.findById(ticketId);
+       if (!ticket) return res.status(404).json({ success: false, message: "Ticket not found" });
+
+       // Check if already paid
+       if (ticket.paymentStatus === 'paid') {
+          return res.status(200).json({ success: true, message: "Already paid" });
+       }
+
+       // Create Payment Record (Check duplicate first)
+       const existingPayment = await Payment.findOne({ transactionId: session.payment_intent });
+       if (!existingPayment) {
+           await Payment.create({
+             userId,
+             ticketId,
+             businessId,
+             amount: amountPaid,
+             paymentMethod: "card",
+             status: "completed",
+             transactionId: session.payment_intent,
+             stripePaymentIntentId: session.payment_intent,
+             paidAt: new Date(),
+           });
+       }
+
+       // Update Ticket
+       ticket.paymentStatus = "paid";
+       let newlyConfirmed = false;
+       // If ticket was pending payment, move to waiting queue
+       if (ticket.status === 'pending_payment') {
+         ticket.status = 'waiting';
+         newlyConfirmed = true;
+       }
+       await ticket.save();
+
+       // Socket Update
+       const socketIO = req.app.get("socketIO");
+       if (socketIO) {
+          // If this is a newly confirmed payment (from pending), the webhook likely didn't run or we beat it?
+          // Actually, if we are here, we handle the response directly.
+          // BUT if webhook also ran, it emitted paymentUpdate.
+          // Since we are redirecting the user to success page, do we NEED a socket event?
+          // The success page SHOWS the success state.
+          // So we can probably REMOVE this emission for manual confirmation flow.
+          
+          /* 
+          socketIO.emitToUser(userId, 'paymentUpdate', {
+              status: 'success',
+              message: `Payment confirmed`,
+              ticketId
+          });
+          */
+          socketIO.emitTicketUpdated(businessId, ticket);
+          if (newlyConfirmed) {
+              socketIO.emitTicketCreated(businessId, ticket);
+          }
+       }
+
+       return res.status(200).json({ success: true, message: "Payment confirmed successfully" });
+    } else {
+       return res.status(400).json({ success: false, message: "Payment not completed" });
     }
 
-    const user = await User.findOne({ verificationToken: token });
+  } catch (error) {
+    console.error("Confirm session error:", error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
 
-    if (!user) {
-      return res.status(400).json({
-        success: false,
-        message: "Invalid verification token",
-      });
-    }
+// -------------------------
+// GET /api/v1/payments/businesses/:businessId/payments
+// Get all payments for a business
+// -------------------------
+exports.getBusinessPayments = async (req, res) => {
+  try {
+    const { businessId } = req.params;
 
-    user.isEmailVerified = true;
-    user.verificationToken = undefined;
-    await user.save();
+    // Find all payments for this business
+    const payments = await Payment.find({ businessId })
+      .populate('userId', 'name email phone')
+      .populate('ticketId', 'ticketNumber status guestName guestPhone guestEmail')
+      .sort({ createdAt: -1 });
 
     res.status(200).json({
-      success: true,
-      message: "Email verified successfully",
+      status: 'success',
+      results: payments.length,
+      data: {
+        payments
+      }
     });
   } catch (error) {
-    console.error("Verify email error:", error);
+    console.error("Get business payments error:", error);
     res.status(500).json({
-      success: false,
-      message: "Error verifying email",
+      status: 'error',
+      message: error.message
+    });
+  }
+};
+
+// -------------------------
+// GET /api/v1/payments/users/me/payments
+// Get user's payment history
+// -------------------------
+exports.getUserPayments = async (req, res) => {
+  try {
+    const payments = await Payment.find({ userId: req.user.id })
+      .populate('businessId', 'name')
+      .populate('ticketId', 'ticketNumber status')
+      .sort({ createdAt: -1 });
+
+    res.status(200).json({
+      status: 'success',
+      results: payments.length,
+      data: {
+        payments
+      }
+    });
+  } catch (error) {
+    console.error("Get user payments error:", error);
+    res.status(500).json({
+      status: 'error',
+      message: error.message
+    });
+  }
+};
+
+// -------------------------
+// GET /api/v1/payments/all
+// Get all payments (admin only)
+// -------------------------
+exports.getAllPayments = async (req, res) => {
+  try {
+    const payments = await Payment.find()
+      .populate('userId', 'name email')
+      .populate('businessId', 'name')
+      .populate('ticketId', 'ticketNumber')
+      .sort({ createdAt: -1 });
+
+    res.status(200).json({
+      status: 'success',
+      results: payments.length,
+      data: {
+        payments
+      }
+    });
+  } catch (error) {
+    console.error("Get all payments error:", error);
+    res.status(500).json({
+      status: 'error',
+      message: error.message
+    });
+  }
+};
+
+// -------------------------
+// GET /api/v1/payments/:id
+// Get payment by ID
+// -------------------------
+exports.getPaymentById = async (req, res) => {
+  try {
+    const payment = await Payment.findById(req.params.id)
+      .populate('userId', 'name email phone')
+      .populate('businessId', 'name')
+      .populate('ticketId');
+
+    if (!payment) {
+      return res.status(404).json({
+        status: 'fail',
+        message: 'Payment not found'
+      });
+    }
+
+    res.status(200).json({
+      status: 'success',
+      data: {
+        payment
+      }
+    });
+  } catch (error) {
+    console.error("Get payment by ID error:", error);
+    res.status(500).json({
+      status: 'error',
+      message: error.message
+    });
+  }
+};
+
+// -------------------------
+// GET /api/v1/payments/:id/receipt
+// Get payment receipt
+// -------------------------
+exports.getReceipt = async (req, res) => {
+  try {
+    const payment = await Payment.findById(req.params.id)
+      .populate('userId', 'name email')
+      .populate('businessId', 'name address')
+      .populate('ticketId', 'ticketNumber');
+
+    if (!payment) {
+      return res.status(404).json({
+        status: 'fail',
+        message: 'Payment not found'
+      });
+    }
+
+    res.status(200).json({
+      status: 'success',
+      data: {
+        payment
+      }
+    });
+  } catch (error) {
+    console.error("Get receipt error:", error);
+    res.status(500).json({
+      status: 'error',
+      message: error.message
+    });
+  }
+};
+
+// -------------------------
+// POST /api/v1/payments/:id/refund
+// Refund a payment
+// -------------------------
+exports.refundPayment = async (req, res) => {
+  try {
+    const payment = await Payment.findById(req.params.id);
+
+    if (!payment) {
+      return res.status(404).json({
+        status: 'fail',
+        message: 'Payment not found'
+      });
+    }
+
+    if (payment.status === 'refunded') {
+      return res.status(400).json({
+        status: 'fail',
+        message: 'Payment already refunded'
+      });
+    }
+
+    // Update payment status
+    payment.status = 'refunded';
+    payment.refundDate = new Date();
+    payment.refundReason = req.body.reason || 'Refund requested';
+    await payment.save();
+
+    // Update ticket if exists
+    if (payment.ticketId) {
+      const ticket = await Ticket.findById(payment.ticketId);
+      if (ticket) {
+        ticket.paymentStatus = 'refunded';
+        await ticket.save();
+      }
+    }
+
+    res.status(200).json({
+      status: 'success',
+      message: 'Payment refunded successfully',
+      data: {
+        payment
+      }
+    });
+  } catch (error) {
+    console.error("Refund payment error:", error);
+    res.status(500).json({
+      status: 'error',
+      message: error.message
     });
   }
 };
