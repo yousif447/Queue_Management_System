@@ -41,7 +41,7 @@ app.use('/uploads', express.static('uploads'));
 
 // CORS - Allow frontend origins
 const allowedOrigins = [
-  'https://quickqueue-nine.vercel.app',
+  'https://queue-management-system-beta.vercel.app',
   'http://localhost:3000',
   'http://127.0.0.1:3000',
   'http://localhost:3001',
