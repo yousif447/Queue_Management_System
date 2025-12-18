@@ -5,7 +5,7 @@
 
 const http = require('http');
 
-const API_BASE_URL = 'http://localhost:3001/api/v1';
+const API_BASE_URL = 'http://localhost:5000/api/v1';
 
 function testSearch(query) {
   return new Promise((resolve, reject) => {
