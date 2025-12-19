@@ -14,7 +14,7 @@ import { useSocket } from '@/contexts/SocketContext';
 import { useTranslations } from '@/hooks/useTranslations';
 import { Button, Modal, ModalBody, ModalHeader } from "flowbite-react";
 import { useEffect, useState } from 'react';
-import toast, { Toaster } from 'react-hot-toast';
+import toast from 'react-hot-toast';
 import { FaBars, FaTimes } from "react-icons/fa";
 import { HiOutlineExclamationCircle } from "react-icons/hi";
 
@@ -281,7 +281,6 @@ export default function PatientDashboard() {
 
   return (
     <ProtectedRoute allowedRoles={['user']}>
-      <Toaster position="top-right" />
       {/* Delete Account Modal */}
       {openModal && (
         <Modal className='flex items-center' show={openModal} size="md" onClose={() => setOpenModal(false)} popup>
