@@ -4,6 +4,7 @@ const Queue = require("../models/queueSchema"); // Import Queue model
 const {
   generateQueryEmbedding,
   findSimilar,
+  expandQuery,
 } = require("../utils/embeddingService");
 
 // Helper function to attach ratings and queue status to businesses
@@ -541,7 +542,8 @@ exports.semanticSearchBusinesses = async (req, res) => {
       specialization,
       page = 1,
       limit = 10,
-      minSimilarity = 0.35, // Minimum similarity threshold for relevance (lowered for better recall)
+
+      minSimilarity = 0.30, // Minimum similarity threshold (lowered for better recall with expanded queries)
     } = req.query;
 
     if (!q || q.trim().length === 0) {
@@ -551,8 +553,11 @@ exports.semanticSearchBusinesses = async (req, res) => {
       });
     }
 
-    // 1. Generate embedding for search query using Cohere (optimized for queries)
-    const queryEmbedding = await generateQueryEmbedding(q.trim());
+    // 1. Expand query with related terms (AI-powered query expansion)
+    const expandedQuery = await expandQuery(q.trim());
+
+    // 2. Generate embedding for expanded query
+    const queryEmbedding = await generateQueryEmbedding(expandedQuery);
 
     if (!queryEmbedding) {
       console.warn("Embedding generation failed, falling back to keyword search");
@@ -660,6 +665,7 @@ exports.semanticSearchBusinesses = async (req, res) => {
         },
         searchType: similarBusinesses.length > paginatedResults.length ? "hybrid_semantic_keyword" : "semantic_cohere",
         query: q,
+        expandedQuery: expandedQuery !== q ? expandedQuery : undefined,
       },
     });
   } catch (error) {

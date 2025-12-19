@@ -66,6 +66,37 @@ async function generateEmbeddingsBatch(texts) {
   }
 }
 
+
+/**
+ * Expand a search query with related terms using Cohere Chat
+ * @param {string} query - Original search query
+ * @returns {Promise<string>} - Expanded query string
+ */
+async function expandQuery(query) {
+  try {
+    if (!query || typeof query !== 'string' || query.trim().length === 0) {
+      return query;
+    }
+
+    // Use Cohere's chat API to generate related terms
+    const response = await cohere.chat({
+      message: `The user is searching for a business or service with the query: "${query}". Provide 5-10 related keywords, categories, or broader terms. Return ONLY the keywords separated by spaces. Do not use commas or bullet points.`,
+      model: 'command-r', // Fast and capable model
+      temperature: 0.3,   // Low temperature for focused results
+    });
+
+    const relatedTerms = response.text.trim();
+    console.log(`Query expanded: "${query}" -> "${relatedTerms}"`);
+    
+    // Return original query + related terms
+    return `${query} ${relatedTerms}`;
+  } catch (error) {
+    console.error('Error expanding query:', error.message);
+    // Fallback to original query
+    return query;
+  }
+}
+
 /**
  * Generate query embedding (optimized for search queries)
  * @param {string} query - Search query text
@@ -263,5 +294,6 @@ module.exports = {
   generateBusinessEmbeddings,
   cosineSimilarity,
   findSimilar,
+  expandQuery,
 };
 

@@ -5,7 +5,7 @@
  * Run this after starting your backend server
  */
 
-const API_BASE_URL = 'http://localhost:3000/api/v1';
+const API_BASE_URL = 'http://localhost:5000/api/v1';
 
 // Test queries in both languages
 const testQueries = {
@@ -24,6 +24,11 @@ const testQueries = {
     'طبيب',          // doctor
     'مركز طبي',      // medical center
     'بنك',           // bank
+  ],
+  relatedConcepts: [
+    { query: 'kibbeh', lang: 'English', expectedCategory: 'Syrian/Middle Eastern' },
+    { query: 'fattoush', lang: 'English', expectedCategory: 'Syrian/Lebanese' },
+    { query: 'كبة', lang: 'Arabic', expectedCategory: 'Syrian/Middle Eastern' },
   ]
 };
 
@@ -71,6 +76,13 @@ async function runAllTests() {
   for (const query of testQueries.arabic) {
     await testSemanticSearch(query, 'Arabic');
     await new Promise(resolve => setTimeout(resolve, 500));
+  }
+  
+  // Test Related Concepts
+  console.log('\n\n📝 Testing Related Concepts (Query Expansion)...');
+  for (const item of testQueries.relatedConcepts) {
+    await testSemanticSearch(item.query, `${item.lang} (${item.expectedCategory})`);
+    await new Promise(resolve => setTimeout(resolve, 1000));
   }
   
   console.log('\n✅ All tests completed!');
