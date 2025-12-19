@@ -80,8 +80,8 @@ async function expandQuery(query) {
 
     // Use Cohere's chat API to generate related terms
     const response = await cohere.chat({
-      message: `The user is searching for a business or service with the query: "${query}". Provide 5-10 related keywords, categories, or broader terms. Return ONLY the keywords separated by spaces. Do not use commas or bullet points.`,
-      model: 'command-r', // Fast and capable model
+      message: `The user is searching for a business or service with the query: "${query}". Provide 5-10 related keywords, categories, or broader terms. IMPORTANT: If the query is in Arabic, provide keywords in BOTH Arabic and English. If in English, provide in English. Return ONLY the keywords separated by spaces. Do not use commas or bullet points.`,
+      model: 'command-light', // Lightweight model, more likely to be available
       temperature: 0.3,   // Low temperature for focused results
     });
 
