@@ -153,6 +153,16 @@ const businessSchema = new mongoose.Schema(
     servicesEmbedding: [Number],
     specializationEmbedding: [Number],
     combinedEmbedding: [Number],
+
+    // Review management
+    rating: {
+      type: Number,
+      default: 0
+    },
+    reviewCount: {
+      type: Number,
+      default: 0
+    },
   },
   { timestamps: true },
 );

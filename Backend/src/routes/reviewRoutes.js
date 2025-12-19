@@ -159,7 +159,7 @@ router.get("/businesses/:businessId/reviews", async (req, res) => {
     const { rating, sort = "-createdAt", page = 1, limit = 10 } = req.query;
     const { businessId } = req.params;
 
-    // validate business exists (optional but helpful)
+    // Validate business exists
     const business = await Business.findById(businessId);
     if (!business)
       return res.status(404).json({ message: "Business not found" });
@@ -175,7 +175,7 @@ router.get("/businesses/:businessId/reviews", async (req, res) => {
       .limit(Number(limit))
       .populate("userId", "name profilePhoto");
 
-    // average rating aggregation
+    // Average rating aggregation
     const agg = await Review.aggregate([
       { $match: { businessId: new mongoose.Types.ObjectId(businessId) } },
       {
@@ -190,8 +190,21 @@ router.get("/businesses/:businessId/reviews", async (req, res) => {
     const avgRating = agg[0]?.avgRating ?? 0;
     const count = agg[0]?.count ?? 0;
 
+    // Sanitize anonymous reviews
+    const sanitizedReviews = reviews.map((review) => {
+      const reviewObj = review.toObject();
+      if (reviewObj.isAnonymous) {
+        reviewObj.userId = {
+          _id: null,
+          name: "Anonymous User",
+          profilePhoto: null,
+        };
+      }
+      return reviewObj;
+    });
+
     return res.json({
-      reviews,
+      reviews: sanitizedReviews,
       avgRating,
       count,
       page: Number(page),
@@ -200,6 +213,17 @@ router.get("/businesses/:businessId/reviews", async (req, res) => {
   } catch (err) {
     return res.status(500).json({ message: err.message });
   }
+});
+
+/**
+ * GET /api/v1/reviews/business/:businessId
+ * Alias for /api/v1/reviews/businesses/:businessId/reviews for compatibility
+ */
+router.get("/business/:businessId", async (req, res) => {
+  // Transfer to the standard endpoint
+  // This allows frontend calls to /api/v1/reviews/business/:id to work
+  req.url = `/businesses/${req.params.businessId}/reviews`;
+  return router.handle(req, res);
 });
 
 /**

@@ -439,6 +439,22 @@
       "admins": "Admins",
       "systemHealth": "System Health"
     },
+    "sidebar": {
+      "theme": "Theme",
+      "lang": "Language",
+      "logout": "Logout",
+      "adminRole": "Admin"
+    },
+    "common": {
+      "retry": "Retry",
+      "refresh": "Refresh",
+      "fillFields": "Please fill all fields",
+      "selectItems": "Please select items",
+      "update": "Update",
+      "cancel": "Cancel",
+      "create": "Create",
+      "deleteConfirm": "Are you sure you want to delete {name}?"
+    },
     "overview": {
       "totalUsers": "Total Users",
       "totalBusinesses": "Total Businesses",
@@ -460,6 +476,69 @@
       "update": "Update",
       "view": "View",
       "search": "Search"
+    },
+    "users": {
+      "searchPlaceholder": "Search users...",
+      "export": "Export",
+      "ban": "Ban",
+      "delete": "Delete",
+      "banned": "Banned",
+      "edit": "Edit User",
+      "status": "Status"
+    },
+    "businesses": {
+      "searchPlaceholder": "Search businesses..."
+    },
+    "tickets": {
+      "filterAll": "All Status",
+      "filterWaiting": "Waiting",
+      "filterCompleted": "Completed",
+      "filterCancelled": "Cancelled",
+      "business": "Business",
+      "customer": "Customer",
+      "date": "Date",
+      "guest": "Guest"
+    },
+    "reviews": {
+      "anonymous": "Anonymous",
+      "fetchError": "Failed to fetch reviews"
+    },
+    "payments": {
+      "business": "Business",
+      "amount": "Amount",
+      "method": "Method",
+      "date": "Date"
+    },
+    "subscriptions": {
+      "business": "Business",
+      "plan": "Plan",
+      "status": "Status",
+      "stats": {
+        "total": "Total",
+        "active": "Active",
+        "trial": "Trial",
+        "inactive": "Inactive"
+      }
+    },
+    "categories": {
+      "category": "Category"
+    },
+    "admins": {
+      "addAdmin": "Add Admin",
+      "createTitle": "Create New Admin",
+      "namePlaceholder": "Name",
+      "emailPlaceholder": "Email",
+      "passwordPlaceholder": "Password"
+    },
+    "announcement": {
+      "button": "Send Announcement",
+      "title": "New Announcement",
+      "titlePlaceholder": "Title",
+      "messagePlaceholder": "Message",
+      "send": "Send",
+      "targetAll": "All Users",
+      "targetUsers": "Customers Only",
+      "targetOwners": "Business Owners Only"
     },
     "modals": {
       "editUser": "Edit User",
@@ -484,7 +563,26 @@
       "plan": "Plan",
       "rating": "Rating"
     },
+    "statuses": {
+      "active": "Active",
+      "inactive": "Inactive",
+      "waiting": "Waiting",
+      "completed": "Completed",
+      "cancelled": "Cancelled",
+      "serving": "Serving",
+      "banned": "Banned",
+      "pending": "Pending",
+      "connected": "Connected",
+      "disconnected": "Disconnected"
+    },
     "queue": {
+      "liveStatus": "Live queue status across all businesses",
+      "noActiveQueues": "No active queues",
+      "current": "Current",
+      "waiting": "Waiting",
+      "serving": "Serving"
+    },
+    "queues": {
       "liveStatus": "Live queue status across all businesses",
       "noActiveQueues": "No active queues",
       "current": "Current",
@@ -496,6 +594,7 @@
       "uptime": "Uptime",
       "memory": "Memory",
       "nodeVersion": "Node",
+      "dbCounts": "Database Stats",
       "databaseCounts": "Database Counts"
     },
     "subscription": {
@@ -504,6 +603,19 @@
       "trial": "Trial",
       "inactive": "Inactive"
     }
+  },
+  "toast": {
+    "success": "Success",
+    "failed": "Action failed",
+    "updated": "Updated successfully",
+    "deleted": "Deleted successfully",
+    "created": "Created successfully",
+    "banned": "User banned",
+    "unbanned": "User unbanned"
+  },
+  "common": {
+    "active": "Active",
+    "inactive": "Inactive"
   },
   "notFound": {
     "title": "Page Not Found",

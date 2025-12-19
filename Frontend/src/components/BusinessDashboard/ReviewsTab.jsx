@@ -40,15 +40,21 @@ export default function ReviewsTab({ businessId }) {
     const fetchReviews = async () => {
       if (!businessId) return;
       try {
-        const response = await authFetch(`${API_URL}/api/v1/reviews/business/${businessId}`);
+        const response = await authFetch(`${API_URL}/api/v1/reviews/businesses/${businessId}/reviews`);
         if (response.ok) {
           const result = await response.json();
           const reviewsData = result.reviews || [];
           setReviews(reviewsData);
           setFilteredReviews(reviewsData);
-          const total = reviewsData.length;
-          const avgRating = total > 0 ? reviewsData.reduce((sum, r) => sum + r.rating, 0) / total : 0;
-          setStats({ total, averageRating: avgRating, fiveStars: reviewsData.filter(r => r.rating === 5).length, fourStars: reviewsData.filter(r => r.rating === 4).length, threeStars: reviewsData.filter(r => r.rating === 3).length, twoStars: reviewsData.filter(r => r.rating === 2).length, oneStar: reviewsData.filter(r => r.rating === 1).length });
+          setStats({
+            total: result.count || reviewsData.length,
+            averageRating: result.avgRating || 0,
+            fiveStars: reviewsData.filter(r => r.rating === 5).length,
+            fourStars: reviewsData.filter(r => r.rating === 4).length,
+            threeStars: reviewsData.filter(r => r.rating === 3).length,
+            twoStars: reviewsData.filter(r => r.rating === 2).length,
+            oneStar: reviewsData.filter(r => r.rating === 1).length
+          });
         }
       } catch (error) { toast.error(t('businessDashboard.reviews.fetchError')); }
       finally { setLoading(false); }

@@ -505,6 +505,43 @@
         "edit": "تعديل المستخدم",
         "status": "الحالة"
     },
+    "businesses": {
+      "searchPlaceholder": "بحث عن الأعمال..."
+    },
+    "tickets": {
+      "filterAll": "كل الحالات",
+      "filterWaiting": "في الانتظار",
+      "filterCompleted": "مكتمل",
+      "filterCancelled": "ملغي",
+      "business": "العمل",
+      "customer": "العميل",
+      "date": "التاريخ",
+      "guest": "زائر"
+    },
+    "reviews": {
+      "anonymous": "مجهول",
+      "fetchError": "فشل في جلب المراجعات"
+    },
+    "payments": {
+      "business": "العمل",
+      "amount": "المبلغ",
+      "method": "الطريقة",
+      "date": "التاريخ"
+    },
+    "subscriptions": {
+      "business": "العمل",
+      "plan": "الخطة",
+      "status": "الحالة",
+      "stats": {
+        "total": "الإجمالي",
+        "active": "نشط",
+        "trial": "تجريبي",
+        "inactive": "غير نشط"
+      }
+    },
+    "categories": {
+      "category": "الفئة"
+    },
     "admins": {
         "addAdmin": "إضافة مدير",
         "createTitle": "إنشاء مدير جديد",
@@ -515,9 +552,12 @@
     "announcement": {
       "button": "إرسال إعلان",
       "title": "إعلان جديد",
-      "customer": "العميل",
-      "date": "التاريخ",
-      "guest": "زائر"
+      "titlePlaceholder": "العنوان",
+      "messagePlaceholder": "الرسالة",
+      "send": "إرسال",
+      "targetAll": "الكل",
+      "targetUsers": "العملاء فقط",
+      "targetOwners": "أصحاب الأعمال فقط"
     },
     "modals": {
       "editUser": "تعديل المستخدم",
@@ -542,28 +582,6 @@
       "plan": "الخطة",
       "rating": "التقييم"
     },
-    "businesses": {
-      "searchPlaceholder": "بحث عن الأعمال..."
-    },
-    "payments": {
-      "title": "المدفوعات",
-      "business": "العمل",
-      "amount": "المبلغ",
-      "method": "الطريقة",
-      "date": "التاريخ"
-    },
-    "subscriptions": {
-      "title": "الاشتراكات",
-      "business": "العمل",
-      "plan": "الخطة",
-      "status": "الحالة",
-      "stats": {
-        "total": "الإجمالي",
-        "active": "نشط",
-        "trial": "تجريبي",
-        "inactive": "غير نشط"
-      }
-    },
     "statuses": {
       "active": "نشط",
       "inactive": "غير نشط",
@@ -583,12 +601,20 @@
       "waiting": "في الانتظار",
       "serving": "قيد الخدمة"
     },
+    "queues": {
+      "liveStatus": "حالة الطوابير المباشرة عبر جميع الأعمال",
+      "noActiveQueues": "لا توجد طوابير نشطة حالياً",
+      "current": "الحالي",
+      "waiting": "في الانتظار",
+      "serving": "قيد الخدمة"
+    },
     "health": {
       "database": "قاعدة البيانات",
       "uptime": "وقت التشغيل",
       "memory": "الذاكرة",
       "nodeVersion": "Node",
-      "dbCounts": "إحصائيات قاعدة البيانات"
+      "dbCounts": "إحصائيات قاعدة البيانات",
+      "databaseCounts": "إحصائيات قاعدة البيانات"
     },
     "subscription": {
       "total": "الإجمالي",
@@ -596,6 +622,19 @@
       "trial": "تجريبي",
       "inactive": "غير نشط"
     }
+  },
+  "toast": {
+    "success": "تم بنجاح",
+    "failed": "فشل الإجراء",
+    "updated": "تم التحديث بنجاح",
+    "deleted": "تم الحذف بنجاح",
+    "created": "تم الإنشاء بنجاح",
+    "banned": "تم حظر المستخدم",
+    "unbanned": "تم إلغاء حظر المستخدم"
+  },
+  "common": {
+    "active": "نشط",
+    "inactive": "غير نشط"
   },
   "notFound": {
     "title": "الصفحة غير موجودة",
