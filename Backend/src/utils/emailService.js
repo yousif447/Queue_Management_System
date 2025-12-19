@@ -20,32 +20,38 @@ const parseEmailFrom = () => {
  * Create and configure email transporter
  */
 const createTransporter = () => {
-  const config = {
-    host: process.env.EMAIL_HOST || "smtp.gmail.com",
-    port: parseInt(process.env.EMAIL_PORT) || 587,
-    secure: false, // true for 465, false for other ports
+  const mailHost = process.env.EMAIL_HOST || "smtp.gmail.com";
+  const mailPort = parseInt(process.env.EMAIL_PORT) || 587;
+  // Support both EMAIL_PASSWORD and EMAIL_PASS environment variables
+  const mailPass = process.env.EMAIL_PASSWORD || process.env.EMAIL_PASS;
+
+  console.log("📧 Configuring Email Transporter...");
+  
+  let config = {
     auth: {
       user: process.env.EMAIL_USER,
-      pass: process.env.EMAIL_PASSWORD,
+      pass: mailPass,
     },
-    // Add timeout and connection options for better error handling
-    connectionTimeout: 10000, // 10 seconds
-    greetingTimeout: 10000,
-    socketTimeout: 10000,
-    // Fix for self-signed certificate errors (corporate proxy/antivirus)
-    // WARNING: Only use in development! Remove or make conditional in production!
+    // Add timeout and connection options for better error handling in serverless
+    connectionTimeout: 15000, // 15 seconds
+    greetingTimeout: 15000,
+    socketTimeout: 15000,
+    // Fix for self-signed certificate errors
     tls: {
       rejectUnauthorized: false
     }
   };
 
-  console.log("📧 Email transporter config:", {
-    host: config.host,
-    port: config.port,
-    secure: config.secure,
-    user: config.auth.user,
-    hasPassword: !!config.auth.pass,
-  });
+  // Optimization for common email services
+  if (mailHost.includes('gmail.com')) {
+    config.service = 'gmail';
+    console.log("🔹 Using pre-configured Gmail service");
+  } else {
+    config.host = mailHost;
+    config.port = mailPort;
+    config.secure = mailPort === 465;
+    console.log(`🔹 Using custom host: ${mailHost}:${mailPort} (secure: ${config.secure})`);
+  }
 
   return nodemailer.createTransport(config);
 };
