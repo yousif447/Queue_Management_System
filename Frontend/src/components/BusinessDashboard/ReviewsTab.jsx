@@ -40,7 +40,7 @@ export default function ReviewsTab({ businessId }) {
     const fetchReviews = async () => {
       if (!businessId) return;
       try {
-        const response = await authFetch(`${API_URL}/api/v1/reviews/businesses/${businessId}/reviews`);
+        const response = await authFetch(`${API_URL}/api/v1/reviews/business/${businessId}`);
         if (response.ok) {
           const result = await response.json();
           const reviewsData = result.reviews || [];

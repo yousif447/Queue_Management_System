@@ -43,7 +43,7 @@ export default function DashboardTab({
         if (res.ok) {
           const data = await res.json();
           const active = data.data?.find(t => 
-            ['waiting', 'called', 'in-progress'].includes(t.status) && 
+            ['waiting', 'called', 'in-progress', 'missed'].includes(t.status) && 
             !t.completedAt &&
             !completedTicketIds.current.has(t._id)
           );
@@ -60,6 +60,9 @@ export default function DashboardTab({
             } else if (active.status === 'called') {
               active.position = 1;
               active.peopleBefore = 0;
+            } else if (active.status === 'missed') {
+              active.position = null;
+              active.peopleBefore = null;
             } else {
               active.position = 0;
               active.peopleBefore = 0;
@@ -123,7 +126,7 @@ export default function DashboardTab({
       }
 
       if (activeTicket?._id === updatedTicket._id) {
-        if (['waiting', 'called', 'in-progress'].includes(updatedTicket.status)) {
+        if (['waiting', 'called', 'in-progress', 'missed'].includes(updatedTicket.status)) {
           if (updatedTicket.status === 'waiting' && updatedTicket.queueId) {
             const currentTicketNum = updatedTicket.queueId?.currentTicketNumber || 0;
             updatedTicket.position = Math.max(1, updatedTicket.ticketNumber - currentTicketNum);
@@ -131,6 +134,9 @@ export default function DashboardTab({
           } else if (updatedTicket.status === 'called') {
             updatedTicket.position = 1;
             updatedTicket.peopleBefore = 0;
+          } else if (updatedTicket.status === 'missed') {
+            updatedTicket.position = null;
+            updatedTicket.peopleBefore = null;
           } else {
             updatedTicket.position = 0;
             updatedTicket.peopleBefore = 0;
@@ -200,17 +206,22 @@ export default function DashboardTab({
               (activeTicket.status === 'done' || activeTicket.status === 'ended') ? 'bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-500/50' :
               activeTicket.status === 'called' ? 'bg-blue-100 dark:bg-blue-500/20 text-blue-700 dark:text-blue-400 border border-blue-200 dark:border-blue-500/50 animate-pulse' :
               activeTicket.status === 'cancelled' ? 'bg-red-100 dark:bg-red-500/20 text-red-700 dark:text-red-400 border border-red-200 dark:border-red-500/50' :
+              activeTicket.status === 'missed' ? 'bg-red-100 dark:bg-red-500/20 text-red-700 dark:text-red-400 border border-red-200 dark:border-red-500/50' :
               activeTicket.status === 'in-progress' ? 'bg-amber-100 dark:bg-amber-500/20 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-500/50' :
               'bg-purple-100 dark:bg-purple-500/20 text-purple-700 dark:text-purple-400 border border-purple-200 dark:border-purple-500/50'
             }`}>
-              {activeTicket.status?.toUpperCase()}
+              {activeTicket.status === 'missed' ? 'MISSED' : activeTicket.status?.toUpperCase()}
             </span>
           </div>
 
           {/* Main Info Grid */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6 relative z-10">
             <StatCard title={t('userDashboard.yourNumber')} value={`#${activeTicket.ticketNumber}`} icon={Ticket} color="bg-emerald-500" />
-            <StatCard title={t('userDashboard.positionInQueue')} value={activeTicket.position || t('userDashboard.calculating')} icon={Users} color="bg-purple-500" />
+            <StatCard title={t('userDashboard.positionInQueue')} 
+              value={activeTicket.status === 'missed' ? '-' : (activeTicket.position || t('userDashboard.calculating'))} 
+              icon={Users} 
+              color="bg-purple-500" 
+            />
             <StatCard 
               title={
                 <span className="flex items-center gap-2">
@@ -220,7 +231,7 @@ export default function DashboardTab({
                   </span>
                 </span>
               }
-              value={activeTicket.estimatedWaitTime ? `~${activeTicket.estimatedWaitTime} min` : activeTicket.estimatedTime ? `~${activeTicket.estimatedTime} min` : '...'} 
+              value={activeTicket.status === 'missed' ? '-' : (activeTicket.estimatedWaitTime ? `~${activeTicket.estimatedWaitTime} min` : activeTicket.estimatedTime ? `~${activeTicket.estimatedTime} min` : '...')} 
               icon={Clock} 
               color="bg-amber-500" 
             />
@@ -248,21 +259,27 @@ export default function DashboardTab({
             </div>
             <div className="bg-gray-200 dark:bg-gray-700 h-3 rounded-full overflow-hidden">
               <div 
-                className="bg-gradient-to-r from-emerald-500 to-teal-500 h-full rounded-full transition-all duration-500 shadow-lg shadow-emerald-500/30"
+                className={`h-full rounded-full transition-all duration-500 shadow-lg ${
+                  activeTicket.status === 'missed' 
+                  ? 'bg-red-500 shadow-red-500/30' 
+                  : 'bg-gradient-to-r from-emerald-500 to-teal-500 shadow-emerald-500/30'
+                }`}
                 style={{ 
                   width: activeTicket.position && activeTicket.queueId?.currentCount 
                     ? `${Math.max(5, Math.min(100, ((activeTicket.queueId.currentCount - activeTicket.position + 1) / activeTicket.queueId.currentCount) * 100))}%`
-                    : '5%'
+                    : activeTicket.status === 'missed' ? '100%' : '5%'
                 }}
               ></div>
             </div>
-            <p className="text-xs text-gray-500 mt-2 text-center">
+            <p className={`text-xs mt-2 text-center font-semibold ${activeTicket.status === 'missed' ? 'text-red-500' : 'text-gray-500'}`}>
               {activeTicket.status === 'called' 
                 ? `🔔 ${t('userDashboard.dashboard.queueStatus.yourTurn')}` 
                 : activeTicket.status === 'done'
                 ? `✅ ${t('userDashboard.dashboard.queueStatus.completed')}`
                 : activeTicket.status === 'in-progress'
                 ? `🔄 ${t('userDashboard.dashboard.queueStatus.serving')}`
+                : activeTicket.status === 'missed'
+                ? `🚫 ${t('userDashboard.dashboard.queueStatus.missed') || 'Missed - Ask Staff to Re-admit'}`
                 : activeTicket.position && activeTicket.position > 1
                 ? `⏳ ${t('userDashboard.dashboard.queueStatus.waiting', { count: activeTicket.position - 1 })}`
                 : activeTicket.position === 1

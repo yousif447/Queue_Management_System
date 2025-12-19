@@ -764,6 +764,56 @@ exports.noShowTicket = async (req, res) => {
 };
 
 // ===============================
+// REACTIVATE TICKET (Undo No-Show)
+// ===============================
+exports.reactivateTicket = async (req, res) => {
+  try {
+    const ticket = await Ticket.findById(req.params.id);
+    if (!ticket) return res.status(404).json({ message: "Ticket not found" });
+
+    if (ticket.status !== "missed") {
+      return res.status(400).json({
+        message: "Only missed/no-show tickets can be reactivated",
+      });
+    }
+
+    // Set back to waiting
+    ticket.status = "waiting";
+    // Optional: Reset expected service time or keep original? 
+    // Keeping original preserves "ticket number" logic, but they might appear "late".
+    // For simple re-admission, just status change is enough.
+    
+    await ticket.save();
+
+    // Increment queue count again
+    if (ticket.queueId) {
+      await Queue.findByIdAndUpdate(ticket.queueId, {
+        $inc: { currentCount: 1 },
+      });
+    }
+
+    const socketIO = req.app.get("socketIO");
+    if (socketIO) {
+      socketIO.emitTicketUpdated(ticket.businessId.toString(), ticket);
+      if (ticket.queueId) {
+        socketIO.emitQueueUpdate(ticket.businessId.toString(), ticket.queueId.toString());
+      }
+    }
+
+    return res.json({
+      status: "success",
+      message: "Ticket reactivated",
+      data: ticket,
+    });
+  } catch (err) {
+    console.error("reactivateTicket error:", err);
+    return res
+      .status(500)
+      .json({ message: "Server error", error: err.message });
+  }
+};
+
+// ===============================
 // MARK TICKET AS PAID (Cash)
 // ===============================
 exports.markTicketPaid = async (req, res) => {

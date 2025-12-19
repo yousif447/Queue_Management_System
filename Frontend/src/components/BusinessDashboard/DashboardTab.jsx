@@ -403,6 +403,24 @@ export default function DashboardTab({ businessData }) {
     } catch (error) { toast.error(t('businessDashboard.messages.failedServe')); }
   };
 
+  const handleReactivateTicket = async (ticketId) => {
+    try {
+      const response = await authFetch(`${API_URL}/api/v1/tickets/tickets/${ticketId}/reactivate`, {
+        method: 'PATCH',
+      });
+
+      if (response.ok) {
+        toast.success(t('businessDashboard.queueManagement.reactivateConfirm'));
+        fetchTickets();
+        fetchStats();
+      } else {
+        toast.error(t('businessDashboard.queueManagement.updateError'));
+      }
+    } catch (error) {
+      toast.error(t('businessDashboard.queueManagement.networkError'));
+    }
+  };
+
   const handleAddWalkIn = async () => {
     if (!walkInData.name || !walkInData.phone) { toast.error(t('businessDashboard.messages.missingInfo')); return; }
     try {
@@ -438,6 +456,7 @@ export default function DashboardTab({ businessData }) {
   const waitingTickets = tickets.filter((t) => t.status === "waiting").sort((a, b) => a.ticketNumber - b.ticketNumber);
   const calledTickets = tickets.filter((t) => t.status === "called");
   const servingTickets = tickets.filter((t) => t.status === "in-progress");
+  const missedTickets = tickets.filter((t) => t.status === "missed" || t.status === "no-show");
   const nextTicket = waitingTickets[0];
 
   if (loading && !businessData) {
@@ -644,6 +663,9 @@ export default function DashboardTab({ businessData }) {
               <span className="px-3 py-1.5 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 rounded-lg font-semibold border border-green-200 dark:border-green-700">⚡ {servingTickets.length} {t('businessDashboard.dashboard.serving')}</span>
               <span className="px-3 py-1.5 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 rounded-lg font-semibold border border-blue-200 dark:border-blue-700">📢 {calledTickets.length} {t('businessDashboard.dashboard.called')}</span>
               <span className="px-3 py-1.5 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400 rounded-lg font-semibold border border-purple-200 dark:border-purple-700">⏰ {waitingTickets.length} {t('businessDashboard.dashboard.waiting')}</span>
+              {missedTickets.length > 0 && (
+                <span className="px-3 py-1.5 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 rounded-lg font-semibold border border-red-200 dark:border-red-700">🚫 {missedTickets.length} {t('businessDashboard.queueManagement.missedTickets')}</span>
+              )}
             </div>
           </div>
 
@@ -813,6 +835,64 @@ export default function DashboardTab({ businessData }) {
                       <div className="flex gap-2">
                         {ticket.paymentStatus !== 'paid' && ticket.price > 0 && (<button onClick={() => handleMarkPaid(ticket._id)} className="px-4 py-2 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-xl font-semibold transition-all shadow-md flex items-center gap-2" title="Mark as Paid">💵 Pay</button>)}
                         <button onClick={() => handleCallTicket(ticket._id)} className="px-4 py-2 bg-gradient-to-r from-emerald-500 to-teal-600 text-white rounded-xl font-semibold transition-all shadow-md flex items-center gap-2" title="Call">📢 Call</button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+        
+                {/* Missed Tickets */}
+                {missedTickets.map((ticket, index) => (
+                  <div key={ticket._id} className="relative bg-gradient-to-br from-red-50 to-red-100 dark:from-red-900/20 dark:to-red-800/20 rounded-2xl p-6 shadow-lg border-2 border-red-200 dark:border-red-700/50 hover:border-red-400 dark:hover:border-red-600 transition-all duration-300">
+                     <div className="absolute -top-3 -right-3 px-4 py-1 bg-red-500 rounded-full text-white text-xs font-bold shadow-lg">{t('businessDashboard.queueManagement.noShow')}</div>
+                    
+                    {/* Mobile Layout */}
+                    <div className="md:hidden space-y-4">
+                      <div className="flex items-start justify-between pl-2">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-2">
+                            {ticket.userId?.profileImage ? (
+                              <img src={getImageUrl(ticket.userId.profileImage)} alt={ticket.userId.name} className="w-10 h-10 rounded-full object-cover border-2 border-red-500 shadow-md" />
+                            ) : (
+                              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-red-500 to-red-600 flex items-center justify-center shadow-md"><FaUser className="text-white text-sm" /></div>
+                            )}
+                            <div className="w-10 h-10 rounded-lg bg-red-500 text-white flex items-center justify-center font-bold shadow-md">#{ticket.ticketNumber}</div>
+                            <div>
+                              <h4 className="font-bold text-lg text-gray-900 dark:text-white">{ticket.userId?.name || ticket.guestName || t('businessDashboard.queueManagement.guest')}</h4>
+                              <p className="text-sm text-gray-600 dark:text-gray-400">{ticket.userId?.phone || ticket.guestPhone || ''}</p>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                      <button 
+                        onClick={() => handleReactivateTicket(ticket._id)}
+                        className="w-full py-3 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-xl font-semibold hover:from-blue-600 hover:to-blue-700 transition-all shadow-md flex items-center justify-center gap-2"
+                      >
+                        ↻ {t('businessDashboard.queueManagement.reactivate')}
+                      </button>
+                    </div>
+
+                    {/* Desktop Layout */}
+                    <div className="hidden md:grid md:grid-cols-[auto_auto_1fr_auto] gap-6 items-center">
+                       {ticket.userId?.profileImage ? (
+                        <img src={getImageUrl(ticket.userId.profileImage)} alt={ticket.userId.name} className="w-16 h-16 rounded-full object-cover border-2 border-red-500 shadow-lg" />
+                      ) : (
+                        <div className="w-16 h-16 rounded-full bg-gradient-to-br from-red-500 to-red-600 flex items-center justify-center shadow-lg"><FaUser className="text-white text-2xl" /></div>
+                      )}
+                      <div className="w-16 h-16 rounded-xl bg-gradient-to-br from-red-500 to-red-600 text-white flex items-center justify-center font-bold text-xl shadow-lg">#{ticket.ticketNumber}</div>
+                      <div>
+                        <h4 className="font-bold text-xl text-gray-900 dark:text-white mb-1">{ticket.userId?.name || ticket.guestName || t('businessDashboard.queueManagement.guest')}</h4>
+                        <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">{ticket.userId?.phone || ticket.guestPhone || ''}</p>
+                        <div className="flex items-center gap-2 bg-red-50 dark:bg-red-900/20 px-3 py-1 rounded-lg border border-red-200 dark:border-red-800 w-fit">
+                           <span className="text-xs text-red-600 dark:text-red-400 font-semibold">{t('businessDashboard.queueManagement.noShow')}</span>
+                        </div>
+                      </div>
+                      <div className="flex justify-end">
+                        <button 
+                          onClick={() => handleReactivateTicket(ticket._id)}
+                          className="px-6 py-3 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-xl font-semibold hover:from-blue-600 hover:to-blue-700 transition-all shadow-md flex items-center gap-2"
+                        >
+                          ↻ {t('businessDashboard.queueManagement.reactivate')}
+                        </button>
                       </div>
                     </div>
                   </div>

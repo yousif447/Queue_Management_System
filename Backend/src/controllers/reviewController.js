@@ -130,7 +130,20 @@ router.get("/business/:businessId", async (req, res) => {
 
     const avgRating = avg[0]?.avgRating || 0;
 
-    res.json({ reviews, avgRating });
+    // Sanitize anonymous reviews
+    const sanitizedReviews = reviews.map((review) => {
+      const reviewObj = review.toObject ? review.toObject() : review;
+      if (reviewObj.isAnonymous) {
+        reviewObj.userId = {
+          _id: null,
+          name: "Anonymous User",
+          profilePhoto: null, // You could return a default avatar URL here if you have one
+        };
+      }
+      return reviewObj;
+    });
+
+    res.json({ reviews: sanitizedReviews, avgRating });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

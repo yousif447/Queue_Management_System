@@ -103,6 +103,14 @@ router.patch(
   ticketController.noShowTicket,
 );
 
+// Reactivate no-show ticket (staff only)
+router.patch(
+  "/tickets/:id/reactivate",
+  protect,
+  restrictTo("staff", "owner", "business"),
+  ticketController.reactivateTicket,
+);
+
 // Mark ticket as paid (cash)
 router.patch(
   "/tickets/:id/pay",

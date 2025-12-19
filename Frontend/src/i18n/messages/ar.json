@@ -515,19 +515,6 @@
     "announcement": {
       "button": "إرسال إعلان",
       "title": "إعلان جديد",
-      "titlePlaceholder": "عنوان الإعلان",
-      "messagePlaceholder": "نص الرسالة",
-      "targetAll": "جميع المستخدمين",
-      "targetUsers": "المستخدمين فقط",
-      "targetOwners": "أصحاب الأعمال فقط",
-      "send": "إرسال"
-    },
-    "tickets": {
-      "filterAll": "كل التذاكر",
-      "filterWaiting": "في الانتظار",
-      "filterCompleted": "مكتملة",
-      "filterCancelled": "ملغاة",
-      "business": "العمل",
       "customer": "العميل",
       "date": "التاريخ",
       "guest": "زائر"
@@ -552,7 +539,8 @@
       "date": "التاريخ",
       "amount": "المبلغ",
       "method": "الطريقة",
-      "method": "الطريقة"
+      "plan": "الخطة",
+      "rating": "التقييم"
     },
     "businesses": {
       "searchPlaceholder": "بحث عن الأعمال..."
@@ -588,7 +576,7 @@
       "connected": "متصل",
       "disconnected": "غير متصل"
     },
-    "queues": {
+    "queue": {
       "liveStatus": "حالة الطوابير المباشرة عبر جميع الأعمال",
       "noActiveQueues": "لا توجد طوابير نشطة حالياً",
       "current": "الحالي",
@@ -1430,7 +1418,18 @@
       "resumeQueue": "استئناف الطابور",
       "closed": "مغلق",
       "waitingCount": "{count} في الانتظار",
-      "minutes": "دقائق"
+      "minutes": "دقائق",
+      "unknown": "غير معروف",
+      "markNoShow": "تسجيل عدم حضور",
+      "reactivate": "إعادة قبول",
+      "missedTickets": "التذاكر الفائتة",
+      "queueStatus": {
+        "missed": "فائتة - اطلب من الموظف إعادة التفعيل"
+      },
+      "noMissedTickets": "لا توجد تذاكر فائتة",
+      "noShowConfirm": "تم تسجيل التذكرة كعدم حضور",
+      "reactivateConfirm": "تم إعادة تفعيل التذكرة",
+      "ticketReactivated": "تم إعادة تفعيل التذكرة"
     },
     "profile": {
       "title": "ملف العمل التجارى",
@@ -1559,8 +1558,9 @@
     },
     "success": "تم إعادة تعيين كلمة المرور بنجاح"
   },
+
   "footer": {
-    "description": "تسهيل تجربة الانتظار من خلال حلول ذكية لإدارة الطوابير.",
+    "description": "قم بتبسيط تجربة الانتظار الخاصة بك مع حلول إدارة قائمة الانتظار الذكية.",
     "sections": {
       "product": "المنتج",
       "company": "الشركة",
@@ -1572,7 +1572,7 @@
       "aboutUs": "من نحن",
       "contact": "اتصل بنا"
     },
-    "copyright": "© 2025 كويك كيو.",
+    "copyright": "© 2025 QuickQueue.",
     "allRightsReserved": "جميع الحقوق محفوظة.",
     "contactInfo": {
       "email": "info@quickqueue.com",
@@ -1581,7 +1581,7 @@
     }
   },
   "reviewModal": {
-    "title": "اكتب مراجعة",
+    "title": "كتابة تقييم",
     "subtitle": "شارك تجربتك مع {businessName}",
     "ticketInfo": "معلومات التذكرة",
     "ticket": "تذكرة #",
@@ -1589,14 +1589,14 @@
     "commentLabel": "أخبرنا عن تجربتك",
     "commentPlaceholder": "شارك تفاصيل حول زيارتك، جودة الخدمة، وقت الانتظار، سلوك الموظفين، إلخ.",
     "anonymous": "إخفاء اسمي (نشر كمجهول)",
-    "submit": "إرسال المراجعة",
+    "submit": "إرسال التقييم",
     "submitting": "جاري الإرسال...",
     "cancel": "إلغاء",
     "characters": "{length} حرف",
-    "minCharacters": "يوصى بـ 10 أحرف كحد أدنى",
-    "success": "تم إرسال المراجعة بنجاح!",
-    "failed": "فشل إرسال المراجعة",
-    "selectRating": "يرجى اختيار تقييم",
+    "minCharacters": "يوصى بـ 10 أحرف على الأقل",
+    "success": "تم إرسال التقييم بنجاح!",
+    "failed": "فشل إرسال التقييم",
+    "selectRating": "يرجى تحديد تقييم",
     "writeComment": "يرجى كتابة تعليق",
     "ratings": {
       "poor": "سيء",

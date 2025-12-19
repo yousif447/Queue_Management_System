@@ -207,12 +207,51 @@ export default function QueueManagementTab({ businessId }) {
     }
   };
 
+
+  const handleNoShow = async (ticketId) => {
+    try {
+      const response = await authFetch(`${API_URL}/api/v1/tickets/tickets/${ticketId}/no-show`, {
+        method: 'PATCH',
+      });
+
+      if (response.ok) {
+        toast.success(t('businessDashboard.queueManagement.noShowConfirm'));
+        setCurrentTicket(null);
+        fetchTickets();
+        fetchStats();
+      } else {
+        toast.error(t('businessDashboard.queueManagement.updateError'));
+      }
+    } catch (error) {
+      toast.error(t('businessDashboard.queueManagement.networkError'));
+    }
+  };
+
+  const handleReactivateTicket = async (ticketId) => {
+    try {
+      const response = await authFetch(`${API_URL}/api/v1/tickets/tickets/${ticketId}/reactivate`, {
+        method: 'PATCH',
+      });
+
+      if (response.ok) {
+        toast.success(t('businessDashboard.queueManagement.reactivateConfirm'));
+        fetchTickets();
+        fetchStats();
+      } else {
+        toast.error(t('businessDashboard.queueManagement.updateError'));
+      }
+    } catch (error) {
+      toast.error(t('businessDashboard.queueManagement.networkError'));
+    }
+  };
+
   // Filter waiting tickets - exclude unpaid online payments
   const waitingTickets = tickets.filter(t => 
     t.status === 'waiting' && 
     (t.paymentStatus === 'paid' || t.paymentMethod === 'cash' || !t.paymentMethod)
   );
   const servingTickets = tickets.filter(t => t.status === 'serving');
+  const missedTickets = tickets.filter(t => t.status === 'missed' || t.status === 'no-show'); // Handle both potential status strings if inconsistent
 
   if (loading) {
     return (
@@ -303,12 +342,20 @@ export default function QueueManagementTab({ businessId }) {
                   #{currentTicket.number}
                 </p>
               </div>
-              <button
-                onClick={() => handleServeTicket(currentTicket._id)}
-                className="px-6 py-3 rounded-xl bg-green-500 hover:bg-green-600 text-white font-semibold transition-colors"
-              >
-                ✓ {t('businessDashboard.queueManagement.markAsServed')}
-              </button>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => handleNoShow(currentTicket._id)}
+                  className="px-6 py-3 rounded-xl bg-orange-500 hover:bg-orange-600 text-white font-semibold transition-colors"
+                >
+                  ⚠ {t('businessDashboard.queueManagement.markNoShow')}
+                </button>
+                <button
+                  onClick={() => handleServeTicket(currentTicket._id)}
+                  className="px-6 py-3 rounded-xl bg-green-500 hover:bg-green-600 text-white font-semibold transition-colors"
+                >
+                  ✓ {t('businessDashboard.queueManagement.markAsServed')}
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -411,6 +458,44 @@ export default function QueueManagementTab({ businessId }) {
                     className="w-full py-2 rounded-lg bg-green-500 hover:bg-green-600 text-white font-semibold transition-colors"
                   >
                     ✓ {t('businessDashboard.queueManagement.complete')}
+                  </button>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+
+         {/* Missed Tickets Queue */}
+        <div className="bg-white dark:bg-gradient-to-br dark:from-gray-900 dark:to-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700/50 p-6">
+          <h3 className="text-xl font-bold text-gray-800 dark:text-white mb-4 flex items-center gap-2">
+            <Users size={20} className="text-red-500" />
+            {t('businessDashboard.queueManagement.missedTickets')} ({missedTickets.length})
+          </h3>
+          <div className="space-y-3 max-h-96 overflow-y-auto">
+            {missedTickets.length === 0 ? (
+              <div className="text-center py-8">
+                <span className="text-5xl mb-3 block">🚫</span>
+                <p className="text-gray-500 dark:text-gray-400">{t('businessDashboard.queueManagement.noMissedTickets')}</p>
+              </div>
+            ) : (
+              missedTickets.map((ticket) => (
+                <div key={ticket._id} className="bg-red-50 dark:bg-red-900/20 rounded-lg p-4">
+                  <div className="flex items-center justify-between mb-3">
+                    <p className="font-bold text-gray-800 dark:text-white">
+                      {t('businessDashboard.queueManagement.ticket')} #{ticket.number}
+                    </p>
+                    <span className="text-xs bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 px-2 py-1 rounded-full">
+                      {t('businessDashboard.queueManagement.noShow')}
+                    </span>
+                  </div>
+                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">
+                    {ticket.userId?.name || t('businessDashboard.queueManagement.guest')}
+                  </p>
+                  <button
+                    onClick={() => handleReactivateTicket(ticket._id)}
+                    className="w-full py-2 rounded-lg bg-blue-500 hover:bg-blue-600 text-white font-semibold transition-colors"
+                  >
+                   ↻ {t('businessDashboard.queueManagement.reactivate')}
                   </button>
                 </div>
               ))
