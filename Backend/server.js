@@ -40,21 +40,43 @@ app.use(express.urlencoded({ extended: true }));
 app.use('/uploads', express.static('uploads'));
 
 // CORS - Allow frontend origins
-const allowedOrigins = [
-  'https://queue-management-system-beta.vercel.app',
-  'http://localhost:3000',
-  process.env.FRONTEND_URL // Also allow env var if set
-].filter(Boolean); // Remove undefined/null
+// CORS - Allow frontend origins
+const getNormalizedOrigins = () => {
+  const origins = [
+    'https://queue-management-system-beta.vercel.app',
+    'http://localhost:3000',
+    'http://localhost:5000', // Allow backend self-calls
+  ];
+  
+  if (process.env.FRONTEND_URL) {
+    // Split by comma in case multiple URLs are provided
+    const envOrigins = process.env.FRONTEND_URL.split(',').map(url => url.trim());
+    origins.push(...envOrigins);
+  }
+  
+  // Normalize: Remove trailing slashes and falsy values
+  return origins
+    .filter(Boolean)
+    .map(url => url.replace(/\/$/, ""));
+};
+
+const allowedOrigins = getNormalizedOrigins();
+console.log('✅ Allowed CORS Origins:', allowedOrigins);
 
 app.use(
   cors({
     origin: function(origin, callback) {
       // Allow requests with no origin (like mobile apps or curl)
       if (!origin) return callback(null, true);
-      if (allowedOrigins.includes(origin)) {
+      
+      const normalizedOrigin = origin.replace(/\/$/, "");
+      
+      if (allowedOrigins.includes(normalizedOrigin)) {
         return callback(null, true);
       }
-      return callback(new Error('Not allowed by CORS'), false);
+      
+      console.warn(`⚠️  Blocked by CORS: ${origin}`);
+      return callback(new Error(`Not allowed by CORS: ${origin}`), false);
     },
     credentials: true,
   }),
