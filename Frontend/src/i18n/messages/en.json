@@ -210,6 +210,25 @@
     "categories": {
       "all": "All Categories",
       "medical": "Medical",
+      "healthcare": "Healthcare",
+      "banking": "Banking",
+      "finance": "Finance",
+      "telecom": "Telecom",
+      "government": "Government",
+      "education": "Education",
+      "restaurant": "Restaurant",
+      "retail": "Retail",
+      "technology": "Technology",
+      "automotive": "Automotive",
+      "real estate": "Real Estate",
+      "legal": "Legal",
+      "consulting": "Consulting",
+      "entertainment": "Entertainment",
+      "fitness": "Fitness",
+      "beauty": "Beauty",
+      "travel": "Travel",
+      "insurance": "Insurance",
+      "logistics": "Logistics",
       "dental": "Dental",
       "pharmacy": "Pharmacy",
       "laboratory": "Laboratory",
@@ -612,10 +631,6 @@
     "created": "Created successfully",
     "banned": "User banned",
     "unbanned": "User unbanned"
-  },
-  "common": {
-    "active": "Active",
-    "inactive": "Inactive"
   },
   "notFound": {
     "title": "Page Not Found",
