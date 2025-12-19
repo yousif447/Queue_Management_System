@@ -1375,6 +1375,7 @@
       "disconnected": "Disconnected",
       "waiting": "WAITING",
       "serving": "SERVING",
+      "completed": "COMPLETED",
       "pay": "Pay",
       "completeService": "✓ Complete Service",
       "inProgress": "⏰ In Progress",
