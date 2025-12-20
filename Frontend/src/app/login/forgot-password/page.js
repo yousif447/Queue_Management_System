@@ -66,6 +66,12 @@ export default function page() {
   };
 
   const handleResetPassword = async () => {
+    const isAllValid = Object.values(passwordValidation).every(v => v === true);
+    if (!isAllValid) {
+      setError("Please meet all password requirements");
+      return;
+    }
+
     if (newPassword !== confirmPassword) {
       setError("Passwords do not match");
       return;

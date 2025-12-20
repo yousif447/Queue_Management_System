@@ -20,8 +20,8 @@ const parseEmailFrom = () => {
  * Create and configure email transporter
  */
 const createTransporter = () => {
-  const mailHost = process.env.EMAIL_HOST || "smtp.gmail.com";
-  const mailPort = parseInt(process.env.EMAIL_PORT) || 587;
+  const mailHost = process.env.EMAIL_HOST;
+  const mailPort = parseInt(process.env.EMAIL_PORT);
   // Support both EMAIL_PASSWORD and EMAIL_PASS environment variables
   const mailPass = process.env.EMAIL_PASSWORD || process.env.EMAIL_PASS;
 

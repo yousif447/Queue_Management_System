@@ -56,7 +56,15 @@ export default function ResetPasswordStep({
         </div>
       </div>
 
-      <button className="btn-primary w-full py-4 flex items-center justify-center gap-2" onClick={onResetPassword}>
+      <button 
+        className={`btn-primary w-full py-4 flex items-center justify-center gap-2 transition-all ${
+          (!Object.values(passwordValidation).every(v => v === true) || !newPassword || newPassword !== confirmPassword)
+            ? 'opacity-50 cursor-not-allowed grayscale' 
+            : ''
+        }`} 
+        onClick={onResetPassword}
+        disabled={!Object.values(passwordValidation).every(v => v === true) || !newPassword || newPassword !== confirmPassword}
+      >
         {t('forgotPassword.resetStep.button')} <ArrowRight size={18} />
       </button>
       
