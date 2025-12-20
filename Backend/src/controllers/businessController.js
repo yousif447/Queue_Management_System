@@ -48,6 +48,12 @@ exports.createBusiness = async (req, res) => {
       "-password",
     );
 
+    // Emit socket event for real-time homepage updates
+    const socketIO = req.app.get("socketIO");
+    if (socketIO && socketIO.emitBusinessCreated) {
+      socketIO.emitBusinessCreated(safeBusiness);
+    }
+
     res.status(201).json({
       status: "success",
       message: "Business created successfully",
@@ -141,6 +147,12 @@ exports.updateBusinessById = async (req, res) => {
         });
     }
 
+    // Emit socket event for real-time homepage updates
+    const socketIO = req.app.get("socketIO");
+    if (socketIO && socketIO.emitBusinessUpdated) {
+      socketIO.emitBusinessUpdated(updatedBusiness);
+    }
+
     res.status(200).json({
       status: "success",
       message: "Business updated successfully",
@@ -168,6 +180,12 @@ exports.deleteBusinessById = async (req, res) => {
         status: "fail",
         message: "Business not found",
       });
+    }
+
+    // Emit socket event for real-time homepage updates
+    const socketIO = req.app.get("socketIO");
+    if (socketIO && socketIO.emitBusinessDeleted) {
+      socketIO.emitBusinessDeleted(id);
     }
 
     res.status(200).json({

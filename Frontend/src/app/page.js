@@ -9,7 +9,7 @@ import { useTranslations } from '@/hooks/useTranslations';
 import { ArrowRight, Building2, Calendar, Clock, Search, Sparkles, TrendingUp, Users } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import toast from 'react-hot-toast';
 
 export default function Home() {
@@ -29,6 +29,7 @@ export default function Home() {
   const [showFilterDropdown, setShowFilterDropdown] = useState(false);
   const [isAISuggestion, setIsAISuggestion] = useState(false); // Track if showing AI suggestions
   const [isBusinessLoading, setIsBusinessLoading] = useState(true);
+  const isSearchActiveRef = useRef(false); // Track if search is active (using ref to avoid re-renders)
 
   // Helper function to construct image URL
   const getImageUrl = (imagePath) => {
@@ -55,25 +56,18 @@ export default function Home() {
   }, []);
 
   useEffect(() => {
+    let isInitialLoad = true;
+    
     const fetchBusinesses = async () => {
-      setIsBusinessLoading(true);
+      // Only show loading skeleton on initial load, not on background refreshes
+      if (isInitialLoad) {
+        setIsBusinessLoading(true);
+      }
+      
       try {
-        const timestamp = new Date().getTime();
-        const response = await fetch(`${API_URL}/api/v1/search/businesses?limit=50&_t=${timestamp}`);
+        const response = await fetch(`${API_URL}/api/v1/search/businesses?limit=50`);
         const data = await response.json();
         let businessList = data.data?.businesses || [];
-        console.log('Businesses data:', businessList);
-        console.log('First business:', businessList[0]);
-        console.log('First business queueStatus:', businessList[0]?.queueStatus);
-        console.log('First business isQueueFull:', businessList[0]?.isQueueFull);
-        
-        // Log all businesses with their queue status
-        businessList.forEach((b, idx) => {
-          console.log(`Business ${idx}: ${b.name} - queueStatus: ${b.queueStatus}, isOpen: ${b.isOpen}`);
-          if (b.name === 'Hussien Khaled') {
-            console.log('🔍 HUSSIEN KHALED FULL DATA:', JSON.stringify(b, null, 2));
-          }
-        });
         
         // Sort businesses: Open -> Busy -> Closed
         businessList = businessList.sort((a, b) => {
@@ -86,8 +80,14 @@ export default function Home() {
           return getPriority(a) - getPriority(b);
         });
         
-        setBusinesses(businessList);
-        setAllBusinesses(businessList); // Store for filtering
+        // Always update the cache
+        setAllBusinesses(businessList);
+        
+        // Only update displayed businesses if no search is active
+        // Don't overwrite search results during background refresh
+        if (isInitialLoad || !isSearchActiveRef.current) {
+          setBusinesses(businessList);
+        }
         
         // Extract unique categories/specializations
         const uniqueCategories = [...new Set(
@@ -99,62 +99,77 @@ export default function Home() {
       } catch (error) {
         console.error("Error fetching businesses:", error);
       } finally {
-        setIsBusinessLoading(false);
+        if (isInitialLoad) {
+          setIsBusinessLoading(false);
+          isInitialLoad = false;
+        }
       }
     };
     
+    // Fetch businesses once on page load (no interval - better UX)
     fetchBusinesses();
+  }, []);
+
+  // Listen for real-time business updates via Socket.IO
+  useEffect(() => {
+    const handleBusinessUpdate = (event) => {
+      const { type, business, businessId } = event.detail;
+      
+      if (type === 'created' && business) {
+        console.log('🏢 Real-time: New business added:', business.name);
+        setAllBusinesses(prev => [business, ...prev]);
+        // Only update displayed list if not searching
+        if (!isSearchActiveRef.current) {
+          setBusinesses(prev => [business, ...prev]);
+        }
+      }
+      
+      if (type === 'updated' && business) {
+        console.log('🏢 Real-time: Business updated:', business.name);
+        setAllBusinesses(prev => prev.map(b => b._id === business._id ? business : b));
+        if (!isSearchActiveRef.current) {
+          setBusinesses(prev => prev.map(b => b._id === business._id ? business : b));
+        }
+      }
+      
+      if (type === 'deleted' && businessId) {
+        console.log('🏢 Real-time: Business deleted:', businessId);
+        setAllBusinesses(prev => prev.filter(b => b._id !== businessId));
+        if (!isSearchActiveRef.current) {
+          setBusinesses(prev => prev.filter(b => b._id !== businessId));
+        }
+      }
+    };
+
+    window.addEventListener('businessListUpdate', handleBusinessUpdate);
     
-    // Refresh businesses every 30 seconds
-    const interval = setInterval(() => {
-      fetchBusinesses();
-    }, 30000); // 30 seconds
-    
-    return () => clearInterval(interval);
+    return () => {
+      window.removeEventListener('businessListUpdate', handleBusinessUpdate);
+    };
   }, []);
 
   // Instant search with debounce
   useEffect(() => {
     const performSearch = async () => {
-      // If search is empty, restore all businesses
+      // If search is empty, restore all businesses from cache (don't re-fetch)
       if (!searchQuery.trim()) {
+        isSearchActiveRef.current = false; // Mark search as inactive
         setIsAISuggestion(false); // Not showing AI suggestions
-        // Fetch all businesses again
-        try {
-          const response = await fetch(`${API_URL}/api/v1/search/businesses?limit=50`);
-          const data = await response.json();
-          let businessList = data.data?.businesses || [];
-          
-          // Sort businesses: Open -> Busy -> Closed
-          businessList = businessList.sort((a, b) => {
-            const getPriority = (business) => {
-              if (!business.isOpen) return 3;
-              if (business.isFullyBooked) return 3;
-              if (business.queueStatus === 'active') return 1;
-              return 2;
-            };
-            return getPriority(a) - getPriority(b);
-          });
-          
-          setBusinesses(businessList);
-          setAllBusinesses(businessList);
-          
-          // Extract unique categories
-          const uniqueCategories = [...new Set(
-            businessList
-              .map(b => b.specialization || b.category)
-              .filter(Boolean)
-          )];
-          setCategories(uniqueCategories);
+        // Use cached businesses instead of fetching again
+        if (allBusinesses.length > 0) {
+          setBusinesses(allBusinesses);
           setSelectedCategory('all');
-        } catch (error) {
-          console.error("Error fetching businesses:", error);
         }
         return;
       }
 
-      // Hybrid search: Try regular search first, fallback to AI semantic search
+      // Mark search as active so background refresh doesn't overwrite results
+      isSearchActiveRef.current = true;
+      
+      // Show searching state and clear results to prevent flash of old data
       setIsSearching(true);
+
+      // Hybrid search: Try regular search first, fallback to AI semantic search
       try {
         // Step 1: Try regular text search for exact matches
         console.log('🔍 Searching for:', searchQuery);
@@ -187,7 +202,7 @@ export default function Home() {
         });
         
         setBusinesses(searchResults);
-        setAllBusinesses(searchResults);
+        // Don't update allBusinesses here - keep original list for when search is cleared
         
         // Update categories from search results
         const uniqueCategories = [...new Set(
@@ -217,50 +232,11 @@ export default function Home() {
   }, [searchQuery]);
 
   const handleSearch = async () => {
+    // The search is already handled by the useEffect above
+    // This function is called on Enter/button click - no need to duplicate logic
+    // Just trigger the search effect by ensuring searchQuery is set
     if (!searchQuery.trim()) return;
-    setIsSearching(true);
-    try {
-      // Hybrid search: Try regular search first, fallback to AI semantic search
-      // Step 1: Try regular text search for exact matches
-      let response = await fetch(`${API_URL}/api/v1/search/businesses?q=${encodeURIComponent(searchQuery)}&limit=12`);
-      let data = await response.json();
-      let searchResults = data.data?.businesses || [];
-      
-      // Step 2: If no results, use AI semantic search for intelligent suggestions
-      if (searchResults.length === 0) {
-        console.log('No exact matches, trying AI semantic search...');
-        response = await fetch(`${API_URL}/api/v1/search/semantic?q=${encodeURIComponent(searchQuery)}&limit=12`);
-        data = await response.json();
-        searchResults = data.data?.businesses || [];
-      }
-      
-      // Sort search results: Open -> Busy -> Closed
-      searchResults = searchResults.sort((a, b) => {
-        const getPriority = (business) => {
-          if (!business.isOpen) return 3;
-          if (business.isFullyBooked) return 3;
-          if (business.queueStatus === 'active') return 1;
-          return 2;
-        };
-        return getPriority(a) - getPriority(b);
-      });
-      
-      setBusinesses(searchResults);
-      setAllBusinesses(searchResults);
-      
-      // Update categories from search results
-      const uniqueCategories = [...new Set(
-        searchResults
-          .map(b => b.specialization || b.category)
-          .filter(Boolean)
-      )];
-      setCategories(uniqueCategories);
-      setSelectedCategory('all');
-    } catch (error) {
-      console.error('Error searching:', error);
-    } finally {
-      setIsSearching(false);
-    }
+    // The useEffect will handle the actual search
   };
 
   const handleCategoryFilter = (category) => {

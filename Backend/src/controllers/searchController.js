@@ -543,7 +543,7 @@ exports.semanticSearchBusinesses = async (req, res) => {
       page = 1,
       limit = 10,
 
-      minSimilarity = 0.30, // Minimum similarity threshold (lowered for better recall with expanded queries)
+      minSimilarity = 0.62, // Minimum similarity threshold
     } = req.query;
 
     if (!q || q.trim().length === 0) {
@@ -554,18 +554,21 @@ exports.semanticSearchBusinesses = async (req, res) => {
     }
 
     // 1. Expand query with related terms (AI-powered query expansion)
+    console.log(`🔍 Semantic search: Original query = "${q.trim()}"`);
     const expandedQuery = await expandQuery(q.trim());
+    console.log(`🔍 Semantic search: Expanded query = "${expandedQuery}"`);
 
     // 2. Generate embedding for expanded query
     const queryEmbedding = await generateQueryEmbedding(expandedQuery);
 
     if (!queryEmbedding) {
-      console.warn("Embedding generation failed, falling back to keyword search");
+      console.warn("❌ Embedding generation failed (check COHERE_API_KEY), falling back to keyword search");
       return exports.searchBusinesses(req, res);
     }
+    console.log(`✅ Query embedding generated successfully`);
 
-    // 2. Build filter query for pre-filtering
-    const filterQuery = { status: 'active' };
+    // 2. Build filter query for pre-filtering (removed status filter as it may not be set)
+    const filterQuery = {};
 
     if (businessType) filterQuery.businessType = businessType;
     if (category) filterQuery.category = new RegExp(category, "i");
@@ -577,29 +580,20 @@ exports.semanticSearchBusinesses = async (req, res) => {
       ];
     }
 
-    // 3. Fetch businesses with embeddings (filter businesses without embeddings)
-    const businesses = await Business.find({
+    // 3. First try to find businesses WITH embeddings
+    let businesses = await Business.find({
       ...filterQuery,
-      combinedEmbedding: { $exists: true, $ne: null },
+      combinedEmbedding: { $exists: true, $ne: null, $not: { $size: 0 } },
     })
       .select("-password -refreshTokens -passwordResetToken")
       .lean();
 
+    console.log(`📊 Found ${businesses.length} businesses with embeddings`);
+
+    // 4. If no businesses have embeddings, fall back to keyword search
     if (!businesses || businesses.length === 0) {
-      return res.status(200).json({
-        success: true,
-        data: {
-          businesses: [],
-          pagination: {
-            page: Number(page),
-            limit: Number(limit),
-            total: 0,
-            pages: 0,
-          },
-          searchType: "semantic_cohere",
-          message: "No businesses found with the given filters",
-        },
-      });
+      console.warn("❌ No businesses with embeddings found, falling back to keyword search");
+      return exports.searchBusinesses(req, res);
     }
 
     // 4. Calculate similarity scores using in-memory search
@@ -610,32 +604,35 @@ exports.semanticSearchBusinesses = async (req, res) => {
       Number(minSimilarity) // Minimum similarity threshold
     );
 
-    // 5. Hybrid Search Fallback: If semantic search returns few results, add keyword matches
-    if (similarBusinesses.length < Number(limit)) {
-      console.log(`Semantic search returned ${similarBusinesses.length} results, adding keyword matches...`);
+    console.log(`🎯 Semantic search found ${similarBusinesses.length} similar businesses (threshold: ${minSimilarity})`);
+    if (similarBusinesses.length > 0) {
+      console.log(`📈 Top match: "${similarBusinesses[0].business.name}" with similarity ${similarBusinesses[0].similarity.toFixed(3)}`);
+    }
+
+    // 5. Hybrid Search Fallback: Only if semantic search returns ZERO results, add keyword matches
+    if (similarBusinesses.length === 0) {
+      console.log(`Semantic search returned 0 results, trying keyword matches...`);
       
-      const semanticIds = new Set(similarBusinesses.map(r => r.business._id.toString()));
       const searchRegex = new RegExp(q.trim(), "i");
       
-      // Find keyword matches not already in semantic results
+      // Find keyword matches
       const keywordMatches = businesses
         .filter(business => {
-          const inSemanticResults = semanticIds.has(business._id.toString());
           const matchesKeyword = 
             searchRegex.test(business.name) ||
             searchRegex.test(business.specialization) ||
             searchRegex.test(business.address) ||
             (business.service && business.service.some(s => searchRegex.test(s.name)));
           
-          return !inSemanticResults && matchesKeyword;
+          return matchesKeyword;
         })
         .map(business => ({
           business,
-          similarity: 0.3, // Lower score for keyword matches
+          similarity: 0.4, // Lower score for keyword matches
         }));
       
-      // Combine semantic and keyword results
-      similarBusinesses = [...similarBusinesses, ...keywordMatches]
+      // Use keyword results since semantic found nothing
+      similarBusinesses = keywordMatches
         .sort((a, b) => b.similarity - a.similarity);
     }
 

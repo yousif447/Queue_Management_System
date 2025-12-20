@@ -81,7 +81,7 @@ async function expandQuery(query) {
     // Use Cohere's chat API to generate related terms
     const response = await cohere.chat({
       message: `The user is searching for a business or service with the query: "${query}". Provide 5-10 related keywords, categories, or broader terms. IMPORTANT: If the query is in Arabic, provide keywords in BOTH Arabic and English. If in English, provide in English. Return ONLY the keywords separated by spaces. Do not use commas or bullet points.`,
-      model: 'command-light', // Lightweight model, more likely to be available
+      model: 'command-r-08-2024', // Current available model
       temperature: 0.3,   // Low temperature for focused results
     });
 
@@ -225,10 +225,10 @@ function cosineSimilarity(vecA, vecB) {
  * @param {number[]} queryEmbedding - Query embedding vector
  * @param {Array} businesses - Array of business objects with embeddings
  * @param {number} topK - Number of top results to return
- * @param {number} minSimilarity - Minimum similarity threshold (default: 0.35)
+ * @param {number} minSimilarity - Minimum similarity threshold (default: 0.62)
  * @returns {Array} - Array of businesses with similarity scores
  */
-function findSimilar(queryEmbedding, businesses, topK = 10, minSimilarity = 0.35) {
+function findSimilar(queryEmbedding, businesses, topK = 10, minSimilarity = 0.62) {
   if (!queryEmbedding || !businesses || businesses.length === 0) {
     return [];
   }
@@ -238,13 +238,13 @@ function findSimilar(queryEmbedding, businesses, topK = 10, minSimilarity = 0.35
     .map((business) => {
       const similarities = [];
 
-      // Check similarity with combined embedding (most important - weighted highest)
+      // Check similarity with combined embedding (most important)
       if (business.combinedEmbedding) {
         const similarity = cosineSimilarity(
           queryEmbedding,
           business.combinedEmbedding
         );
-        similarities.push(similarity * 1.5); // Highest weight for combined
+        similarities.push(similarity); // Combined embedding captures overall business
       }
 
       // Check individual embeddings
@@ -253,7 +253,7 @@ function findSimilar(queryEmbedding, businesses, topK = 10, minSimilarity = 0.35
           queryEmbedding,
           business.nameEmbedding
         );
-        similarities.push(similarity * 1.3); // Name is important
+        similarities.push(similarity); // Name match
       }
 
       if (business.specializationEmbedding) {
@@ -261,7 +261,7 @@ function findSimilar(queryEmbedding, businesses, topK = 10, minSimilarity = 0.35
           queryEmbedding,
           business.specializationEmbedding
         );
-        similarities.push(similarity * 1.2); // Specialization matters
+        similarities.push(similarity); // Specialization match
       }
 
       if (business.servicesEmbedding) {
@@ -269,7 +269,7 @@ function findSimilar(queryEmbedding, businesses, topK = 10, minSimilarity = 0.35
           queryEmbedding,
           business.servicesEmbedding
         );
-        similarities.push(similarity * 1.0); // Services baseline
+        similarities.push(similarity); // Services match
       }
 
       // Use maximum similarity across all embeddings

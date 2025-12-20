@@ -216,6 +216,37 @@ const socketHandler = (io) => {
 
     // Get all connected users
     getConnectedUsers: () => connectedUsers,
+
+    // =========================================
+    // BUSINESS UPDATES (for homepage real-time updates)
+    // =========================================
+    
+    // Emit when a new business is created
+    emitBusinessCreated: (business) => {
+      io.emit("businessCreated", {
+        business,
+        timestamp: new Date(),
+      });
+      console.log(`📤 Emitted businessCreated: ${business.name}`);
+    },
+
+    // Emit when a business is updated
+    emitBusinessUpdated: (business) => {
+      io.emit("businessUpdated", {
+        business,
+        timestamp: new Date(),
+      });
+      console.log(`📤 Emitted businessUpdated: ${business.name}`);
+    },
+
+    // Emit when a business is deleted
+    emitBusinessDeleted: (businessId) => {
+      io.emit("businessDeleted", {
+        businessId,
+        timestamp: new Date(),
+      });
+      console.log(`📤 Emitted businessDeleted: ${businessId}`);
+    },
   };
 };
 

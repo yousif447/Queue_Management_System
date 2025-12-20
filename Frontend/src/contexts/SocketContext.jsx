@@ -283,6 +283,31 @@ export const SocketProvider = ({ children }) => {
       showNotification('Appointment Reminder', `You have an appointment in ${data.timeUntil}`, 'info');
     });
 
+    // =========================================
+    // BUSINESS UPDATE EVENTS (for homepage real-time updates)
+    // =========================================
+    socket.on('businessCreated', (data) => {
+      console.log('🏢 Business Created:', data.business?.name);
+      // Emit custom event that homepage can listen to
+      window.dispatchEvent(new CustomEvent('businessListUpdate', { 
+        detail: { type: 'created', business: data.business }
+      }));
+    });
+
+    socket.on('businessUpdated', (data) => {
+      console.log('🏢 Business Updated:', data.business?.name);
+      window.dispatchEvent(new CustomEvent('businessListUpdate', { 
+        detail: { type: 'updated', business: data.business }
+      }));
+    });
+
+    socket.on('businessDeleted', (data) => {
+      console.log('🏢 Business Deleted:', data.businessId);
+      window.dispatchEvent(new CustomEvent('businessListUpdate', { 
+        detail: { type: 'deleted', businessId: data.businessId }
+      }));
+    });
+
     return () => {
       // Don't cleanup on re-render, listeners are initialized once
     };
