@@ -250,3 +250,41 @@ exports.uploadProfilePhoto = async (req, res) => {
     });
   }
 };
+
+// -------------------------
+// POST /api/v1/businesses/sync-embeddings
+// Generate embeddings for businesses that don't have them
+// -------------------------
+exports.syncEmbeddings = async (req, res) => {
+  try {
+    const businesses = await Business.find({
+      $or: [
+        { combinedEmbedding: { $exists: false } },
+        { combinedEmbedding: { $size: 0 } }
+      ]
+    });
+
+    let updatedCount = 0;
+    let errors = [];
+
+    for (const business of businesses) {
+      try {
+        const embeddings = await generateBusinessEmbeddings(business);
+        if (embeddings && Object.keys(embeddings).length > 0) {
+          await Business.findByIdAndUpdate(business._id, embeddings);
+          updatedCount++;
+        }
+      } catch (e) {
+        errors.push({ name: business.name, error: e.message });
+      }
+    }
+
+    res.status(200).json({
+      status: "success",
+      message: `Sync completed. Updated ${updatedCount} of ${businesses.length} businesses.`,
+      errors: errors.length > 0 ? errors : undefined
+    });
+  } catch (err) {
+    res.status(500).json({ status: "error", message: err.message });
+  }
+};

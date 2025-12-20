@@ -22,6 +22,9 @@ router.put(
   businessController.updateBusinessById
 );
 
+// Sync embeddings for businesses without them
+router.post("/sync-embeddings", businessController.syncEmbeddings);
+
 // Create a new business (open to anyone or you can restrict to admin)
 router.post("/business", businessController.createBusiness);
 
