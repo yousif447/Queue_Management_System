@@ -1,6 +1,7 @@
 const Business = require("../models/businessSchema");
 const Queue = require("../models/queueSchema");
 const { generateBusinessEmbeddings } = require("../utils/embeddingService");
+const { uploadToCloudinary, deleteFromCloudinary, getPublicIdFromUrl } = require("../utils/cloudinaryConfig");
 
 // -------------------------
 // POST /api/v1/businesses
@@ -183,7 +184,7 @@ exports.deleteBusinessById = async (req, res) => {
 
 // -------------------------
 // POST /api/v1/businesses/upload-profile-photo
-// Upload profile photo for business
+// Upload profile photo for business (using Cloudinary)
 // -------------------------
 exports.uploadProfilePhoto = async (req, res) => {
   try {
@@ -195,21 +196,43 @@ exports.uploadProfilePhoto = async (req, res) => {
     }
 
     const userId = req.user.id;
-    const profileImageUrl = `/uploads/profiles/${req.file.filename}`;
 
-    // Update business profile image
-    const business = await Business.findByIdAndUpdate(
-      userId,
-      { profileImage: profileImageUrl },
-      { new: true, select: "-password" }
-    );
-
-    if (!business) {
+    // Find the business first to check if there's an existing photo to delete
+    const existingBusiness = await Business.findById(userId);
+    if (!existingBusiness) {
       return res.status(404).json({
         status: "fail",
         message: "Business not found",
       });
     }
+
+    // Delete old image from Cloudinary if exists
+    if (existingBusiness.profileImage && existingBusiness.profileImage.includes('cloudinary.com')) {
+      const publicId = getPublicIdFromUrl(existingBusiness.profileImage);
+      if (publicId) {
+        try {
+          await deleteFromCloudinary(publicId);
+          console.log('Deleted old profile image from Cloudinary');
+        } catch (deleteErr) {
+          console.log('Could not delete old image:', deleteErr.message);
+        }
+      }
+    }
+
+    // Upload new image to Cloudinary
+    const result = await uploadToCloudinary(req.file.buffer, {
+      folder: 'queue-management/business-profiles',
+      public_id: `business_${userId}_${Date.now()}`,
+    });
+
+    const profileImageUrl = result.secure_url;
+
+    // Update business profile image with Cloudinary URL
+    const business = await Business.findByIdAndUpdate(
+      userId,
+      { profileImage: profileImageUrl },
+      { new: true, select: "-password" }
+    );
 
     res.status(200).json({
       status: "success",

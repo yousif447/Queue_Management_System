@@ -36,6 +36,14 @@ export default function BusinessDetailsModal({ business, onClose, onBook, isAuth
   const [isClosing, setIsClosing] = useState(false);
   const isClosingRef = useRef(false);
 
+  // Helper function to construct image URL
+  const getImageUrl = (imagePath) => {
+    if (!imagePath) return null;
+    if (imagePath.startsWith('http')) return imagePath;
+    const cleanPath = imagePath.startsWith('/') ? imagePath : `/${imagePath}`;
+    return `${API_URL}${cleanPath}`;
+  };
+
   const handleClose = () => {
     if (isClosingRef.current) return; // Prevent multiple calls
     isClosingRef.current = true;
@@ -257,7 +265,7 @@ export default function BusinessDetailsModal({ business, onClose, onBook, isAuth
               {(business.profileImage || (business.businessImages && business.businessImages.length > 0)) ? (
                 <>
                   <img 
-                    src={`${API_URL}${business.profileImage || business.businessImages[0]}`}
+                    src={getImageUrl(business.profileImage || business.businessImages[0])}
                     alt={business.name}
                     className="w-full h-full object-cover"
                     onError={(e) => {

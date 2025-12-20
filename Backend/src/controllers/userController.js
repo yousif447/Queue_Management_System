@@ -1,4 +1,5 @@
 const User = require("../models/userSchema");
+const { uploadToCloudinary, deleteFromCloudinary, getPublicIdFromUrl } = require("../utils/cloudinaryConfig");
 
 // DTO to return only safe fields
 class UserDto {
@@ -73,7 +74,7 @@ const deleteUser = async (req, res) => {
   }
 };
 
-// ==================== Upload Profile Photo ====================
+// ==================== Upload Profile Photo (Cloudinary) ====================
 const uploadProfilePhoto = async (req, res) => {
   try {
     // Check if file was uploaded
@@ -85,21 +86,43 @@ const uploadProfilePhoto = async (req, res) => {
     }
 
     const userId = req.user._id;
-    const profileImageUrl = `/uploads/profiles/${req.file.filename}`;
 
-    // Update user with new profile image
-    const user = await User.findByIdAndUpdate(
-      userId,
-      { profileImage: profileImageUrl },
-      { new: true }
-    ).select("-password").populate("businessIds");
-
-    if (!user) {
+    // Find the user first to check if there's an existing photo to delete
+    const existingUser = await User.findById(userId);
+    if (!existingUser) {
       return res.status(404).json({
         status: "fail",
         message: "User not found",
       });
     }
+
+    // Delete old image from Cloudinary if exists
+    if (existingUser.profileImage && existingUser.profileImage.includes('cloudinary.com')) {
+      const publicId = getPublicIdFromUrl(existingUser.profileImage);
+      if (publicId) {
+        try {
+          await deleteFromCloudinary(publicId);
+          console.log('Deleted old profile image from Cloudinary');
+        } catch (deleteErr) {
+          console.log('Could not delete old image:', deleteErr.message);
+        }
+      }
+    }
+
+    // Upload new image to Cloudinary
+    const result = await uploadToCloudinary(req.file.buffer, {
+      folder: 'queue-management/user-profiles',
+      public_id: `user_${userId}_${Date.now()}`,
+    });
+
+    const profileImageUrl = result.secure_url;
+
+    // Update user with new profile image (Cloudinary URL)
+    const user = await User.findByIdAndUpdate(
+      userId,
+      { profileImage: profileImageUrl },
+      { new: true }
+    ).select("-password").populate("businessIds");
 
     res.status(200).json({
       status: "success",

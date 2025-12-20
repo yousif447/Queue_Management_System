@@ -30,6 +30,15 @@ export default function Home() {
   const [isAISuggestion, setIsAISuggestion] = useState(false); // Track if showing AI suggestions
   const [isBusinessLoading, setIsBusinessLoading] = useState(true);
 
+  // Helper function to construct image URL
+  const getImageUrl = (imagePath) => {
+    if (!imagePath) return null;
+    if (imagePath.startsWith('http')) return imagePath;
+    const cleanPath = imagePath.startsWith('/') ? imagePath : `/${imagePath}`;
+    return `${API_URL}${cleanPath}`;
+  };
+
+
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -686,7 +695,7 @@ export default function Home() {
                       {/* Business Photo */}
                       {business.profileImage || (business.businessImages && business.businessImages.length > 0) ? (
                         <img 
-                          src={`${API_URL}${business.profileImage || business.businessImages[0]}`}
+                          src={getImageUrl(business.profileImage || business.businessImages[0])}
                           alt={business.name}
                           className="w-20 h-20 rounded-xl object-cover flex-shrink-0 border-4 border-white/20 shadow-lg"
                           onError={(e) => {

@@ -1,5 +1,5 @@
 import { API_URL, authFetch } from '@/lib/api';
-import { ArrowRight, Clock, MapPin, Star, Users } from 'lucide-react';
+import { ArrowRight, Building2, Clock, MapPin, Star, Users } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { v4 as uuid } from 'uuid';
 
@@ -7,6 +7,14 @@ const Card = ({ clinic }) => {
     const [queueData, setQueueData] = useState(null);
     const [isQueuePaused, setIsQueuePaused] = useState(false);
     const [queueLoading, setQueueLoading] = useState(true);
+
+    // Helper function to construct image URL
+    const getImageUrl = (imagePath) => {
+        if (!imagePath) return null;
+        if (imagePath.startsWith('http')) return imagePath;
+        const cleanPath = imagePath.startsWith('/') ? imagePath : `/${imagePath}`;
+        return `${API_URL}${cleanPath}`;
+    };
 
     useEffect(() => {
         if (clinic?._id) {
@@ -55,6 +63,7 @@ const Card = ({ clinic }) => {
 
     const status = getStatusBadge();
     const isBookable = clinic.isOpen && !isQueuePaused && queueData && queueData.status === 'active';
+    const businessImageUrl = getImageUrl(clinic.profileImage || (clinic.businessImages && clinic.businessImages[0]));
 
     return (
         <div className='group relative overflow-hidden bg-white dark:bg-gradient-to-br dark:from-gray-900 dark:to-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700/50 w-full max-w-[400px] mx-auto shadow-lg hover:shadow-2xl transition-all duration-300 hover:-translate-y-1'>
@@ -64,6 +73,24 @@ const Card = ({ clinic }) => {
             <div className="relative z-10 p-6">
                 {/* Header */}
                 <div className='flex justify-between items-start mb-4'>
+                    {/* Business Photo */}
+                    <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center flex-shrink-0 mr-3 overflow-hidden shadow-lg shadow-emerald-500/25">
+                        {businessImageUrl ? (
+                            <img 
+                                src={businessImageUrl}
+                                alt={clinic.name}
+                                className="w-full h-full object-cover"
+                                onError={(e) => {
+                                    e.target.style.display = 'none';
+                                    if (e.target.nextSibling) e.target.nextSibling.style.display = 'flex';
+                                }}
+                            />
+                        ) : null}
+                        <div className={`w-full h-full flex items-center justify-center ${businessImageUrl ? 'hidden' : 'flex'}`}>
+                            <Building2 size={24} className="text-white" />
+                        </div>
+                    </div>
+                    
                     <div className='flex-1 min-w-0'>
                         <h3 className='text-xl font-bold text-gray-900 dark:text-white truncate group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors'>
                             {clinic.name}
