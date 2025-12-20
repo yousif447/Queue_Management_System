@@ -16,6 +16,7 @@ import { FaBriefcase, FaCreditCard, FaMapMarkerAlt, FaPhone } from "react-icons/
 import { IoPersonOutline } from "react-icons/io5";
 import { MdOutlineMailLock } from "react-icons/md";
 import { RiLockPasswordLine } from "react-icons/ri";
+import { AlertCircle } from 'lucide-react';
 
 export default function Page() {
   const router = useRouter();
@@ -41,6 +42,32 @@ export default function Page() {
   const [profilePhotoFile, setProfilePhotoFile] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+
+  const formatError = (errorData) => {
+    if (!errorData) return '';
+
+    // If it's a string, try to parse it
+    if (typeof errorData === 'string') {
+      try {
+        const parsed = JSON.parse(errorData);
+        if (Array.isArray(parsed)) {
+          return parsed.map(e => e.message).join('. ');
+        }
+        if (parsed.message) return parsed.message;
+        return errorData;
+      } catch (e) {
+        // Not JSON or can't be parsed, return as is
+        return errorData;
+      }
+    }
+
+    // If it's an array (Zod errors)
+    if (Array.isArray(errorData)) {
+      return errorData.map(e => e.message).join('. ');
+    }
+
+    return errorData.message || errorData.toString();
+  };
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -194,8 +221,17 @@ export default function Page() {
       toast.success('Business registered successfully! Please select a plan.');
       router.push('/select-plan');
     } catch (err) {
-      setError(err.message);
-      toast.error(err.message || 'Failed to register business');
+      // Handle the error data from the catch block
+      let errorMessage = err.message;
+      
+      // If it's a fetch error or generic error
+      if (err.message === 'Failed to fetch') {
+        errorMessage = 'Network error. Please check your connection.';
+      }
+
+      const formatted = formatError(errorMessage);
+      setError(formatted);
+      toast.error(formatted);
       console.error('Registration error:', err);
     } finally {
       setLoading(false);
@@ -238,8 +274,9 @@ export default function Page() {
           </div>
 
           {error && (
-            <div className="mb-6 p-4 bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/30 rounded-xl text-red-600 dark:text-red-400 text-sm">
-              {error}
+            <div className="mb-6 p-4 bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/30 rounded-xl flex items-center gap-3 animate-in fade-in slide-in-from-top-2 duration-300">
+              <AlertCircle size={20} className="text-red-600 dark:text-red-400 shrink-0" />
+              <p className="text-red-700 dark:text-red-400 text-sm font-medium">{error}</p>
             </div>
           )}
 
