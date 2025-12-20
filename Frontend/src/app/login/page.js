@@ -22,6 +22,33 @@ export default function Page() {
   const [error, setError] = useState('');
   const [showPassword, setShowPassword] = useState(false);
 
+  const formatError = (errorData) => {
+    if (!errorData) return '';
+
+    // If it's already an array
+    if (Array.isArray(errorData)) {
+      return errorData.map(e => e.message || e.toString()).join('. ');
+    }
+
+    // If it's an object with a message property
+    if (typeof errorData === 'object' && errorData.message) {
+      if (typeof errorData.message === 'string') return errorData.message;
+      return formatError(errorData.message);
+    }
+
+    // If it's a string, try to parse it
+    if (typeof errorData === 'string') {
+      try {
+        const parsed = JSON.parse(errorData);
+        return formatError(parsed);
+      } catch (e) {
+        return errorData;
+      }
+    }
+
+    return errorData.toString();
+  };
+
   const handleGoogleLogin = () => {
     window.location.href = `${API_URL}/api/v1/auth/google`;
   };
@@ -42,7 +69,13 @@ export default function Page() {
       const result = await res.json();
       console.log('Login response:', result); // Debug log
       console.log('User role:', result.user?.role, 'Expected:', expectedRole); // Debug log
-      if (!res.ok) throw new Error(result.message || "Failed to login");
+      
+      if (!res.ok) {
+        const formatted = formatError(result.message || "Failed to login");
+        setError(formatted);
+        setLoading(false);
+        return;
+      }
 
       // Store token in localStorage for cross-origin auth (cookies don't work cross-domain)
       if (result.accessToken) {
@@ -66,8 +99,9 @@ export default function Page() {
         setError(errorMsg);
       }
     } catch (err) {
-      setError(err.message);
-      toast.error(err.message || 'Invalid credentials');
+      const formatted = formatError(err.message);
+      setError(formatted);
+      toast.error(formatted);
     } finally {
       setLoading(false);
     }
@@ -132,11 +166,11 @@ export default function Page() {
 
           {/* Error Alert */}
           {error && (
-            <div className="mb-6 p-4 bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/50 text-red-700 dark:text-red-400 rounded-xl flex items-center gap-3">
-              <div className="w-10 h-10 bg-red-100 dark:bg-red-500/20 rounded-full flex items-center justify-center flex-shrink-0">
-                <span className="text-red-500">!</span>
+            <div className="mb-6 p-4 bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/30 rounded-xl flex items-center gap-3 animate-in fade-in slide-in-from-top-2 duration-300">
+              <div className="w-10 h-10 bg-red-100 dark:bg-red-500/20 rounded-full flex items-center justify-center shrink-0">
+                <span className="text-red-500 font-bold">!</span>
               </div>
-              <p className="text-sm font-medium">{error}</p>
+              <p className="text-red-700 dark:text-red-400 text-sm font-medium">{error}</p>
             </div>
           )}
 

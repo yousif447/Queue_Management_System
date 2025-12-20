@@ -1,7 +1,7 @@
 "use client";
 import { useTranslations } from '@/hooks/useTranslations';
 import { API_URL } from '@/lib/api';
-import { ArrowRight, Lock, Mail, Phone, Shield, Star, User, UserPlus, Zap } from 'lucide-react';
+import { ArrowRight, Lock, Mail, Phone, Shield, Star, User, UserPlus, Zap, AlertCircle } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
@@ -18,6 +18,33 @@ export default function Page() {
   const handleChange = (e) => setUser({...user, [e.target.name]: e.target.value});
   const handleGoogleSignup = () => window.location.href = `${API_URL}/api/v1/auth/google`;
 
+  const formatError = (errorData) => {
+    if (!errorData) return '';
+
+    // If it's already an array (direct result from res.json())
+    if (Array.isArray(errorData)) {
+      return errorData.map(e => e.message || e.toString()).join('. ');
+    }
+
+    // If it's an object with a message property (e.g., standard API error)
+    if (typeof errorData === 'object' && errorData.message) {
+      if (typeof errorData.message === 'string') return errorData.message;
+      return formatError(errorData.message);
+    }
+
+    // If it's a string, try to parse it (in case it's stringified JSON from throw Error)
+    if (typeof errorData === 'string') {
+      try {
+        const parsed = JSON.parse(errorData);
+        return formatError(parsed);
+      } catch (e) {
+        return errorData;
+      }
+    }
+
+    return errorData.toString();
+  };
+
   const handleRegister = async () => {
     setError('');
     setLoading(true);
@@ -28,7 +55,13 @@ export default function Page() {
         body: JSON.stringify(user)
       });
       const data = await res.json();
-      if(!res.ok) throw new Error(data.message || "Failed to register user");
+      
+      if(!res.ok) {
+        const formatted = formatError(data.message || "Failed to register user");
+        setError(formatted);
+        setLoading(false);
+        return;
+      }
 
       if (data.accessToken) {
         localStorage.setItem('accessToken', data.accessToken);
@@ -36,7 +69,7 @@ export default function Page() {
 
       router.push('/user');
     } catch (err) {
-      setError(err.message);
+      setError(formatError(err.message));
     } finally {
       setLoading(false);
     }
@@ -87,8 +120,9 @@ export default function Page() {
           </div>
 
           {error && (
-            <div className="mb-6 p-4 bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/30 rounded-xl text-red-600 dark:text-red-400 text-sm">
-              {error}
+            <div className="mb-6 p-4 bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/30 rounded-xl flex items-center gap-3 animate-in fade-in slide-in-from-top-2 duration-300">
+              <AlertCircle size={20} className="text-red-600 dark:text-red-400 shrink-0" />
+              <p className="text-red-700 dark:text-red-400 text-sm font-medium">{error}</p>
             </div>
           )}
 
