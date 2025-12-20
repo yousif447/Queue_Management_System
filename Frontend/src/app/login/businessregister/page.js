@@ -46,27 +46,28 @@ export default function Page() {
   const formatError = (errorData) => {
     if (!errorData) return '';
 
-    // If it's a string, try to parse it
+    // If it's already an array (direct result from res.json())
+    if (Array.isArray(errorData)) {
+      return errorData.map(e => e.message || e.toString()).join('. ');
+    }
+
+    // If it's an object with a message property
+    if (typeof errorData === 'object' && errorData.message) {
+      return errorData.message;
+    }
+
+    // If it's a string, try to parse it (in case it's stringified JSON)
     if (typeof errorData === 'string') {
       try {
         const parsed = JSON.parse(errorData);
-        if (Array.isArray(parsed)) {
-          return parsed.map(e => e.message).join('. ');
-        }
-        if (parsed.message) return parsed.message;
-        return errorData;
+        return formatError(parsed); // Recursive call to handle the parsed data
       } catch (e) {
         // Not JSON or can't be parsed, return as is
         return errorData;
       }
     }
 
-    // If it's an array (Zod errors)
-    if (Array.isArray(errorData)) {
-      return errorData.map(e => e.message).join('. ');
-    }
-
-    return errorData.message || errorData.toString();
+    return errorData.toString();
   };
 
   const handleChange = (e) => {
@@ -189,7 +190,11 @@ export default function Page() {
       const data = await res.json();
 
       if (!res.ok) {
-        throw new Error(data.message || "Failed to register business");
+        const formatted = formatError(data.message || "Failed to register business");
+        setError(formatted);
+        toast.error(formatted);
+        setLoading(false);
+        return;
       }
 
       if (data.accessToken) {
