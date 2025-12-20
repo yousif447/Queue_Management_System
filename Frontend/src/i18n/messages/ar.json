@@ -592,7 +592,16 @@
       "banned": "محظور",
       "pending": "معلق",
       "connected": "متصل",
-      "disconnected": "غير متصل"
+      "disconnected": "غير متصل",
+      "ended": "منتهي",
+      "in-progress": "قيد التنفيذ",
+      "closed": "مغلق",
+      "open": "مفتوح",
+      "paused": "متوقف مؤقتاً",
+      "served": "تم الخدمة",
+      "done": "تم",
+      "called": "تم النداء",
+      "no-show": "لم يحضر"
     },
     "queue": {
       "liveStatus": "حالة الطوابير المباشرة عبر جميع الأعمال",

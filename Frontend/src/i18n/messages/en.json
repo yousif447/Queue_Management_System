@@ -592,7 +592,16 @@
       "banned": "Banned",
       "pending": "Pending",
       "connected": "Connected",
-      "disconnected": "Disconnected"
+      "disconnected": "Disconnected",
+      "ended": "Ended",
+      "in-progress": "In Progress",
+      "closed": "Closed",
+      "open": "Open",
+      "paused": "Paused",
+      "served": "Served",
+      "done": "Done",
+      "called": "Called",
+      "no-show": "No Show"
     },
     "queue": {
       "liveStatus": "Live queue status across all businesses",

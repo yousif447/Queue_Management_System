@@ -10,6 +10,14 @@ export default function FindBusinessTab({ t, searchResults, isSearching, searchQ
   const [selectedBusiness, setSelectedBusiness] = useState(null);
   const [isProcessing, setIsProcessing] = useState(false);
 
+  // Helper function to construct image URL (handles Cloudinary URLs)
+  const getImageUrl = (imagePath) => {
+    if (!imagePath) return null;
+    if (imagePath.startsWith('http')) return imagePath; // Cloudinary URL
+    const cleanPath = imagePath.startsWith('/') ? imagePath : `/${imagePath}`;
+    return `${API_URL}${cleanPath}`;
+  };
+
   const handleBookClick = (business) => setSelectedBusiness(business);
 
   const handleCheckout = async (business) => {
@@ -103,7 +111,7 @@ export default function FindBusinessTab({ t, searchResults, isSearching, searchQ
                     {/* Business Photo */}
                     {business.profileImage || (business.businessImages && business.businessImages.length > 0) ? (
                       <img 
-                        src={`${API_URL}${business.profileImage || business.businessImages[0]}`}
+                        src={getImageUrl(business.profileImage || business.businessImages[0])}
                         alt={business.name}
                         className="w-20 h-20 rounded-xl object-cover flex-shrink-0 border-4 border-white/20 shadow-lg"
                         onError={(e) => {

@@ -1,7 +1,7 @@
 "use client";
 import { API_URL } from '@/lib/api';
 
-import { CreditCard, Calendar, Clock, Ticket, Building2, MapPin, Phone, Mail, DollarSign } from 'lucide-react';
+import { CreditCard, DollarSign, Ticket } from 'lucide-react';
 
 const StatCard = ({ title, value, icon: Icon, color }) => (
   <div className="relative overflow-hidden bg-white dark:bg-gradient-to-br dark:from-gray-900 dark:to-gray-800 p-5 rounded-2xl border border-gray-200 dark:border-gray-700/50 shadow-lg group hover:shadow-xl hover:scale-[1.02] transition-all duration-300">
@@ -50,17 +50,17 @@ export default function PaymentsTab({ t, myPayments, loadingPayments }) {
             <div key={payment._id} className="group bg-white dark:bg-gradient-to-br dark:from-gray-900 dark:to-gray-800 rounded-3xl p-8 shadow-lg border border-gray-200 dark:border-gray-700/50 hover:shadow-2xl dark:hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 relative overflow-hidden">
                <div className="absolute top-0 right-0 w-40 h-40 bg-gradient-to-br from-indigo-500/5 to-purple-500/5 rounded-bl-full -mr-8 -mt-8 opacity-50 group-hover:scale-110 transition-transform duration-500"></div>
                
-              <div className="flex justify-between items-start mb-6 relative z-10">
+              <div className="flex flex-col sm:flex-row gap-4 sm:justify-between sm:items-start mb-6 relative z-10">
                 <div className="flex items-center gap-4">
                    {payment.businessId?.profileImage ? (
                       <img 
                         src={`${API_URL}${payment.businessId.profileImage}`}
                         alt={payment.businessId.name}
-                        className="w-14 h-14 rounded-2xl object-cover bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700"
+                        className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl object-cover bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700"
                         onError={(e) => { e.target.style.display = 'none'; e.target.nextSibling.style.display = 'flex'; }}
                       />
                    ) : null}
-                   <div className="w-14 h-14 rounded-2xl bg-gray-50 dark:bg-gray-800 flex items-center justify-center border border-gray-200 dark:border-gray-700" style={{ display: payment.businessId?.profileImage ? 'none' : 'flex' }}>
+                   <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-gray-50 dark:bg-gray-800 flex items-center justify-center border border-gray-200 dark:border-gray-700" style={{ display: payment.businessId?.profileImage ? 'none' : 'flex' }}>
                       {payment.paymentMethod === 'card' ? <CreditCard className="text-indigo-500" size={24} /> : <DollarSign className="text-emerald-500" size={24} />}
                    </div>
                    <div>
@@ -68,7 +68,7 @@ export default function PaymentsTab({ t, myPayments, loadingPayments }) {
                      <p className="text-xs text-gray-500 font-mono mt-1">ID: #{payment.transactionId || payment._id.slice(-8)}</p>
                    </div>
                 </div>
-                <span className={`px-3 py-1 rounded-lg text-xs font-bold uppercase tracking-wide ${
+                <span className={`px-3 py-1 rounded-lg text-xs font-bold uppercase tracking-wide w-fit ${
                   payment.status === 'completed' ? 'bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-500/50' :
                   payment.status === 'pending' ? 'bg-amber-100 dark:bg-amber-500/20 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-500/50' :
                   'bg-red-100 dark:bg-red-500/20 text-red-700 dark:text-red-400 border border-red-200 dark:border-red-500/50'

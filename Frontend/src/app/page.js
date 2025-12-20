@@ -389,7 +389,7 @@ export default function Home() {
               </div>
 
               {/* Quick Stats */}
-              <div className="grid grid-cols-3 gap-4 pt-6 max-w-full">
+              <div className="grid grid-cols-3 gap-2 sm:gap-4 pt-6 max-w-full">
                 <StatsCard value="10K+" label={t('stats.activeUsers')} icon={Users} delay={0} />
                 <StatsCard value="500+" label={t('stats.businesses')} icon={Building2} delay={100} />
                 <StatsCard value="99.9%" label={t('stats.uptime')} icon={TrendingUp} delay={200} />
