@@ -15,7 +15,10 @@ export default function Page() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   
-  const handleChange = (e) => setUser({...user, [e.target.name]: e.target.value});
+  const handleChange = (e) => {
+    setUser({...user, [e.target.name]: e.target.value});
+    if (error) setError('');
+  };
   const handleGoogleSignup = () => window.location.href = `${API_URL}/api/v1/auth/google`;
 
   const formatError = (errorData) => {

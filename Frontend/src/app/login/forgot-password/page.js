@@ -27,6 +27,12 @@ export default function page() {
     hasSpecialChar: false,
   });
 
+  // Clear errors and success messages when step changes
+  useState(() => {
+    setError('');
+    setSuccess('');
+  }, [step]);
+
   const validatePassword = (password) => {
     setPasswordValidation({
       minLength: password.length >= 8,
@@ -40,9 +46,15 @@ export default function page() {
   const handlePasswordChange = (e) => {
     setNewPassword(e.target.value);
     validatePassword(e.target.value);
+    if (error) setError('');
   };
 
-  const handleSendResetCode = async () => {
+  const handleSendResetCode = async (isResend = false) => {
+    const resend = isResend === true;
+    setError('');
+    if (resend) setSuccess(t('forgotPassword.otpStep.sendingCode')); 
+    else setSuccess('');
+
     try {
       const res = await fetch(`${API_URL}/api/v1/auth/forgot-password`, {
         method: 'POST',
@@ -51,13 +63,20 @@ export default function page() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.message);
-      setStep(2);
+      
+      if (resend) {
+        setSuccess(t('forgotPassword.otpStep.codeResent'));
+      } else {
+        setStep(2);
+      }
     } catch (error) {
       setError(error.message);
+      setSuccess('');
     }
   };
 
   const handleVerifyCode = () => {
+    setError('');
     if (isNaN(otp) || otp.length !== 6) {
       setError('Please enter a valid 6-digit code');
       return;
@@ -140,11 +159,11 @@ export default function page() {
           <StepHeader step={step} error={error} success={success} />
 
           {step === 1 && (
-            <EmailStep email={email} setEmail={setEmail} onSendCode={handleSendResetCode} />
+            <EmailStep email={email} setEmail={setEmail} onSendCode={() => handleSendResetCode(false)} />
           )}
 
           {step === 2 && (
-            <OTPStep otp={otp} setOtp={setOtp} onVerifyCode={handleVerifyCode} onResend={() => setStep(1)} />
+            <OTPStep otp={otp} setOtp={setOtp} onVerifyCode={handleVerifyCode} onResend={() => handleSendResetCode(true)} onBack={() => setStep(1)} />
           )}
 
           {step === 3 && (

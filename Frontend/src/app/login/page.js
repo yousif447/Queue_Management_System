@@ -113,7 +113,10 @@ export default function Page() {
   ];
 
   const getData = () => activeTab === 'customer' ? customerData : businessData;
-  const setData = (data) => activeTab === 'customer' ? setCustomerData(data) : setBusinessData(data);
+  const setData = (data) => {
+    if (error) setError('');
+    activeTab === 'customer' ? setCustomerData(data) : setBusinessData(data);
+  };
 
   return (
     <div className="min-h-screen w-full flex bg-gray-50 dark:bg-gray-950">

@@ -631,17 +631,7 @@
       "trial": "Trial",
       "inactive": "Inactive"
     }
-  },
-  "toast": {
-    "success": "Success",
-    "failed": "Action failed",
-    "updated": "Updated successfully",
-    "deleted": "Deleted successfully",
-    "created": "Created successfully",
-    "banned": "User banned",
-    "unbanned": "User unbanned"
-  },
-  "notFound": {
+  },  "notFound": {
     "title": "Page Not Found",
     "description": "Oops! The page you're looking for seems to have wandered off. Let's get you back on track.",
     "button": "Go Back To Home",
@@ -1542,6 +1532,8 @@
       "hint": "Check your email for the 6-digit code",
       "button": "Verify Code",
       "resend": "Didn't receive code? Resend",
+      "sendingCode": "Sending verification code...",
+      "codeResent": "A new code has been sent to your email",
       "backToLogin": "Back to Login"
     },
     "resetStep": {

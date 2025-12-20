@@ -100,6 +100,8 @@ export default function Page() {
     else {
       setBusiness({...business, [name]: value});
     }
+
+    if (error) setError('');
   };
 
   // Handle checkbox for working days
