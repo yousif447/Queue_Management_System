@@ -48,7 +48,7 @@ export const SocketProvider = ({ children }) => {
 
   const fetchNotifications = async () => {
     try {
-      const res = await authFetch(`${API_URL}/api/v1/notifications?limit=50`);
+      const res = await authFetch(`${API_URL}/api/v1/notifications?limit=50&isRead=false`);
       const data = await res.json();
       if(data.status === 'success') {
          const mapped = data.notifications.map(n => ({
@@ -65,6 +65,16 @@ export const SocketProvider = ({ children }) => {
         console.error("Failed to fetch notifications:", e); 
         toast.error(`Sync Error: ${e.message}`);
     }
+  };
+
+  const clearNotifications = async () => {
+    // Optimistic clear
+    setNotifications([]);
+    try {
+        await authFetch(`${API_URL}/api/v1/notifications/read-all`, {
+           method: 'PATCH'
+        });
+    } catch(e) { console.error("Failed to clear notifications:", e); }
   };
 
   const showNotification = (title, message, type = 'info') => {
@@ -234,7 +244,7 @@ export const SocketProvider = ({ children }) => {
       };
       setNotifications(prev => [notification, ...prev].slice(0, 50));
       
-      showNotification('Payment Successful', data.message, 'success');
+      showNotification(data.title || 'Payment Successful', data.message, 'success');
     });
     
     // Ticket Booked notification
@@ -332,9 +342,7 @@ export const SocketProvider = ({ children }) => {
     }
   };
 
-  const clearNotifications = () => {
-    setNotifications([]);
-  };
+
 
   const removeNotification = (id) => {
     setNotifications(prev => prev.filter(n => n.id !== id));

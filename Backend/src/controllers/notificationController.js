@@ -113,6 +113,29 @@ exports.markAsRead = async (req, res) => {
   }
 };
 
+// --------------------------------------------
+// MARK ALL NOTIFICATIONS AS READ
+// --------------------------------------------
+exports.markAllAsRead = async (req, res) => {
+  try {
+    const owner = getOwnerId(req);
+    if (!owner) return res.status(400).json({ message: "Owner not detected" });
+
+    await Notification.updateMany(
+      { [owner.key]: owner.value, isRead: false },
+      { isRead: true }
+    );
+
+    res.status(200).json({
+      status: "success",
+      message: "All notifications marked as read",
+    });
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({ message: "Internal Server Error ❌" });
+  }
+};
+
 exports.sendTestNotification = async (req, res) => {
   try {
     const userId = req.user ? req.user.id : null;

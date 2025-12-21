@@ -215,33 +215,44 @@ exports.createPayment = async (req, res) => {
     // ------------------------------------------
     try {
       if (req.user) {
+         let emailSubject = "Payment Receipt 💳";
+         let emailMessage = `Your payment of $${amount} for Ticket #${ticket.ticketNumber} was successful.`;
+         let socketTitle = "Payment Successful";
+
+         if (paymentMethod === 'cash') {
+            emailSubject = "Ticket Confirmed (Pay at Counter) 🎟️";
+            emailMessage = `Your booking for Ticket #${ticket.ticketNumber} is confirmed. Please pay $${amount} at the counter upon arrival.`;
+            socketTitle = "Payment Due";
+         }
+
          await Notification.create({
              userId: req.user.id,
              businessId: ticket.businessId,
              ticketId: ticketId,
              paymentId: payment._id,
              type: 'payment',
-             message: `Payment of $${amount} successful for Ticket #${ticket.ticketNumber}`,
+             message: emailMessage,
          });
          
-         if (req.user.email) {
-           await sendNotificationEmail({
-              email: req.user.email,
-              name: req.user.name,
-              subject: "Payment Receipt 💳",
-              message: `Your payment of $${amount} for Ticket #${ticket.ticketNumber} was successful.`,
-              type: 'payment'
-           });
-         }
-      }
+          if (req.user.email) {
+             await sendNotificationEmail({
+                email: req.user.email,
+                name: req.user.name,
+                subject: emailSubject,
+                message: emailMessage,
+                type: 'payment'
+             });
+          }
       
-      const socketIO = req.app.get("socketIO");
-      if (socketIO && !req.body.suppressUserSocket) {
-         socketIO.emitToUser(req.user.id, 'paymentUpdate', {
-             status: 'success',
-             message: `Payment of $${amount} successful`,
-             ticketId: ticketId
-         });
+          const socketIO = req.app.get("socketIO");
+          if (socketIO && !req.body.suppressUserSocket) {
+             socketIO.emitToUser(req.user.id, 'paymentUpdate', {
+                 status: paymentMethod === 'cash' ? 'pending' : 'success',
+                 title: socketTitle,
+                 message: emailMessage,
+                 ticketId: ticketId
+             });
+          }
       }
     } catch (e) { console.log('Notification error:', e); }
 

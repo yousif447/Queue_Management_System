@@ -254,99 +254,121 @@ const sendOTPEmail = async ({ email, otp, name }) => {
 };
 
 const sendNotificationEmail = async ({ email, subject, message, name, type = 'general' }) => {
-  try {
-    console.log(`📧 Attempting to send notification email to: ${email}`);
+  console.log(`📧 Attempting to send notification email to: ${email}`);
+
+  const icons = {
+    queue: '🕒',
+    ticket: '🎟️',
+    payment: '💳',
+    general: '📢',
+    turn: '🔔'
+  };
+  
+  const icon = icons[type] || icons.general;
+  const emailSubject = `${icon} ${subject}`;
+
+  const html = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>${subject}</title>
+    </head>
+    <body style="margin: 0; padding: 0; font-family: Arial, sans-serif; background-color: #f4f4f4;">
+      <table role="presentation" style="width: 100%; border-collapse: collapse;">
+        <tr>
+          <td align="center" style="padding: 40px 0;">
+            <table role="presentation" style="width: 600px; border-collapse: collapse; background-color: #ffffff; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); overflow: hidden;">
+              
+              <!-- Header -->
+              <tr>
+                <td style="padding: 30px 30px; text-align: center; background: linear-gradient(135deg, #359487 0%, #2a8074 100%);">
+                  <h1 style="margin: 0; color: #ffffff; font-size: 24px; font-weight: bold;">${subject}</h1>
+                </td>
+              </tr>
+              
+              <!-- Body -->
+              <tr>
+                <td style="padding: 40px 30px;">
+                  <p style="margin: 0 0 20px; font-size: 16px; line-height: 1.5; color: #333333;">
+                    ${name ? `Hi ${name},` : 'Hello,'}
+                  </p>
+                  
+                  <div style="background-color: #f8f9fa; border-left: 4px solid #359487; padding: 20px; margin: 20px 0; border-radius: 4px;">
+                    <p style="margin: 0; font-size: 16px; line-height: 1.6; color: #555555;">
+                      ${message.replace(/\n/g, '<br>')}
+                    </p>
+                  </div>
+                  
+                  <p style="margin: 20px 0 0; font-size: 14px; color: #666666;">
+                    You can view more details in your dashboard.
+                  </p>
+                </td>
+              </tr>
+              
+              <!-- Footer -->
+              <tr>
+                <td style="padding: 20px; text-align: center; background-color: #f8f9fa; border-top: 1px solid #e9ecef;">
+                  <p style="margin: 0 0 5px; font-size: 14px; color: #666666; font-weight: bold;">
+                    Queue Management System
+                  </p>
+                  <p style="margin: 0; font-size: 12px; color: #999999;">
+                    Automated Notification • Do Not Reply
+                  </p>
+                </td>
+              </tr>
+              
+            </table>
+          </td>
+        </tr>
+      </table>
+    </body>
+    </html>
+  `;
+
+  const text = `
+    ${subject}
     
+    ${name ? `Hi ${name},` : 'Hello,'}
+    
+    ${message}
+    
+    Queue Management System
+  `;
+
+  // Try Resend API first
+  try {
+    const resendResult = await sendWithResend({ 
+      to: email, 
+      subject: emailSubject, 
+      html, 
+      text 
+    });
+    
+    if (resendResult) {
+      return resendResult;
+    }
+  } catch (resendError) {
+    console.log("⚠️ Resend failed, trying SMTP fallback...");
+  }
+
+  // Fallback to SMTP
+  try {
     const transporter = createTransporter();
     const fromAddress = parseEmailFrom();
-
-    const icons = {
-      queue: '🕒',
-      ticket: '🎟️',
-      payment: '💳',
-      general: '📢',
-      turn: '🔔'
-    };
-    
-    const icon = icons[type] || icons.general;
 
     const mailOptions = {
       from: fromAddress,
       to: email,
-      subject: `${icon} ${subject}`,
-      html: `
-        <!DOCTYPE html>
-        <html>
-        <head>
-          <meta charset="utf-8">
-          <meta name="viewport" content="width=device-width, initial-scale=1.0">
-          <title>${subject}</title>
-        </head>
-        <body style="margin: 0; padding: 0; font-family: Arial, sans-serif; background-color: #f4f4f4;">
-          <table role="presentation" style="width: 100%; border-collapse: collapse;">
-            <tr>
-              <td align="center" style="padding: 40px 0;">
-                <table role="presentation" style="width: 600px; border-collapse: collapse; background-color: #ffffff; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); overflow: hidden;">
-                  
-                  <!-- Header -->
-                  <tr>
-                    <td style="padding: 30px 30px; text-align: center; background: linear-gradient(135deg, #359487 0%, #2a8074 100%);">
-                      <h1 style="margin: 0; color: #ffffff; font-size: 24px; font-weight: bold;">${subject}</h1>
-                    </td>
-                  </tr>
-                  
-                  <!-- Body -->
-                  <tr>
-                    <td style="padding: 40px 30px;">
-                      <p style="margin: 0 0 20px; font-size: 16px; line-height: 1.5; color: #333333;">
-                        ${name ? `Hi ${name},` : 'Hello,'}
-                      </p>
-                      
-                      <div style="background-color: #f8f9fa; border-left: 4px solid #359487; padding: 20px; margin: 20px 0; border-radius: 4px;">
-                        <p style="margin: 0; font-size: 16px; line-height: 1.6; color: #555555;">
-                          ${message.replace(/\n/g, '<br>')}
-                        </p>
-                      </div>
-                      
-                      <p style="margin: 20px 0 0; font-size: 14px; color: #666666;">
-                        You can view more details in your dashboard.
-                      </p>
-                    </td>
-                  </tr>
-                  
-                  <!-- Footer -->
-                  <tr>
-                    <td style="padding: 20px; text-align: center; background-color: #f8f9fa; border-top: 1px solid #e9ecef;">
-                      <p style="margin: 0 0 5px; font-size: 14px; color: #666666; font-weight: bold;">
-                        Queue Management System
-                      </p>
-                      <p style="margin: 0; font-size: 12px; color: #999999;">
-                        Automated Notification • Do Not Reply
-                      </p>
-                    </td>
-                  </tr>
-                  
-                </table>
-              </td>
-            </tr>
-          </table>
-        </body>
-        </html>
-      `,
-      text: `
-        ${subject}
-        
-        ${name ? `Hi ${name},` : 'Hello,'}
-        
-        ${message}
-        
-        Queue Management System
-      `,
+      subject: emailSubject,
+      html: html,
+      text: text,
     };
 
     const info = await transporter.sendMail(mailOptions);
 
-    console.log("✅ Notification email sent successfully:", info.messageId);
+    console.log("✅ Notification email sent via SMTP:", info.messageId);
     return {
       success: true,
       messageId: info.messageId,
