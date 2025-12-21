@@ -23,7 +23,7 @@ export default function AdminLogin() {
     setError("");
 
     try {
-      const res = await fetch(`${API_URL}/api/v1/auth/login`, {
+      const res = await fetch(`${API_URL}/api/v1/admin/admin/login`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -38,11 +38,8 @@ export default function AdminLogin() {
         throw new Error(data.message || t('adminLogin.invalidCredentials'));
       }
 
-      if (data.user?.role === "admin") {
-        router.push("/adminDashboard");
-      } else {
-        throw new Error(t('adminLogin.accessDenied'));
-      }
+      // Successful login to admin endpoint means it's an admin
+      router.push("/adminDashboard");
     } catch (err) {
       setError(err.message);
     } finally {

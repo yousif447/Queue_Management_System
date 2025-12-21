@@ -315,6 +315,7 @@ exports.googleCallback = async (req, res) => {
 
 // ----------------- Login (User or Business) -----------------
 exports.login = async (req, res) => {
+  console.log(`[authController.login] Incoming request for email: ${req.body?.email}`);
   try {
     const { email, password } = req.body;
 
@@ -337,12 +338,20 @@ exports.login = async (req, res) => {
       entityType = "business";
     }
 
-    console.log(`Login attempt for email=${email} matched entityType=${entityType} userExists=${!!user}`);
+    console.log(`[authController.login] Result for email=${email}: matched entityType=${entityType} userExists=${!!user}`);
 
     if (!user) {
       return res.status(401).json({
         status: "fail",
         message: "Invalid credentials",
+      });
+    }
+
+    // Safety check: Don't allow login if they have admin role in User/Business collection
+    if (user.role === 'admin') {
+      return res.status(403).json({
+        status: "fail",
+        message: "This is an admin account. Please use the dedicated admin login page.",
       });
     }
 
