@@ -21,7 +21,7 @@ const parsePagination = (query) => {
 exports.createTicket = async (req, res) => {
   try {
     let { businessId, queueId, type, priority, paymentMethod, paymentIntentId, guestName, guestPhone, guestEmail, price } = req.body;
-    const userId = req.user ? req.user.id : null;
+    const userId = req.user ? (req.user._id || req.user.id) : null;
 
     if (!businessId)
       return res.status(400).json({ message: "businessId is required" });

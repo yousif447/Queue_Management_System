@@ -58,8 +58,8 @@ class NotificationService {
       });
 
       // 2. Emit Real-time Socket Event
-      if (this.socketIO && userId) {
-        const targetUserId = String(userId);
+      if (this.socketIO && userId && userId !== 'null' && userId !== 'undefined') {
+        const targetUserId = String(userId._id || userId);
         this.socketIO.emitToUser(targetUserId, 'newNotification', {
           id: notification._id,
           type: notification.type,

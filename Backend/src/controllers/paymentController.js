@@ -226,7 +226,7 @@ exports.createPayment = async (req, res) => {
          }
 
          await NotificationService.createNotification({
-             userId: req.user.id,
+             userId: req.user._id || req.user.id,
              businessId: ticket.businessId,
              ticketId: ticketId,
              type: 'payment',

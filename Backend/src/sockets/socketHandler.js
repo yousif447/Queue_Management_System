@@ -101,12 +101,16 @@ const socketHandler = (io) => {
       const { userId } = data;
       
       if (!userId) {
-        socket.emit("error", { message: "userId is required" });
+        socket.emit("error", { message: "userId is required for personal room" });
         return;
       }
 
-      socket.join(`user_${userId}`);
-      console.log(`👤 User ${userId} joined personal notification room`);
+      const roomName = `user_${String(userId)}`;
+      socket.join(roomName);
+      console.log(`👤 Socket ${socket.id} joined personal room: ${roomName}`);
+      
+      // Confirm to user
+      socket.emit("joinedUserRoom", { success: true, room: roomName });
     });
 
     // =========================================
@@ -201,11 +205,12 @@ const socketHandler = (io) => {
 
     // Emit notification to specific user
     emitToUser: (userId, event, data) => {
-      io.to(`user_${userId}`).emit(event, {
+      const roomName = `user_${String(userId)}`;
+      io.to(roomName).emit(event, {
         ...data,
         timestamp: new Date(),
       });
-      console.log(`📤 Emitted ${event} to user ${userId}`);
+      console.log(`📤 Emitted ${event} to ${roomName}`);
     },
 
     // Get connected users count for a business
