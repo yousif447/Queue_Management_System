@@ -419,7 +419,7 @@ export default function Page() {
               </div>
               <div>
                 <p className="text-lg font-bold text-gray-900 dark:text-white">{t('register.business.specialization')}</p>
-                <p className="text-sm text-gray-500 dark:text-gray-400">{t('register.business.specializations.selectCategory') || 'Select your business category'}</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400">{t('register.business.selectCategory') || 'Select your business category'}</p>
               </div>
             </div>
             <select

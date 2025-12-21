@@ -786,9 +786,9 @@
       "cardStripe": "بطاقة (Stripe)",
       "setSchedule": "حدد أوقات العمل",
       "addService": "إضافة خدمة",
+      "selectCategory": "اختر فئة عملك...",
       "specializations": {
         "select": "اختر التخصص",
-        "selectCategory": "اختر فئة عملك...",
         "medical": "🏥 طبي",
         "healthcare": "⚕️ رعاية صحية",
         "banking": "🏦 مصرفي",
