@@ -44,14 +44,12 @@ const parseEmailFrom = () => {
  * Create and configure email transporter
  */
 const createTransporter = () => {
-  const mailHost = process.env.EMAIL_HOST;
-  const mailPort = parseInt(process.env.EMAIL_PORT);
+  const mailHost = process.env.EMAIL_HOST || 'smtp.gmail.com';
+  const mailPort = parseInt(process.env.EMAIL_PORT) || 465;
   // Support both EMAIL_PASSWORD and EMAIL_PASS environment variables
   const mailPass = process.env.EMAIL_PASSWORD || process.env.EMAIL_PASS;
 
   console.log("📧 Configuring Email Transporter...");
-  
-  const isGmail = mailHost && mailHost.includes('gmail.com');
   
   let config = {
     host: mailHost,
@@ -73,9 +71,6 @@ const createTransporter = () => {
     }
   };
 
-  // If it's Gmail and we're in production, sometimes 'service' is safer, 
-  // but explicit host/port is usually better for debugging.
-  // We'll stick to explicit host/port but log the detail.
   console.log(`🔹 SMTP Host: ${mailHost}`);
   console.log(`🔹 SMTP Port: ${mailPort} (Secure: ${config.secure})`);
 
@@ -111,18 +106,15 @@ const testConnection = async () => {
       console.error("  1. Incorrect email or password");
       console.error("  2. Need to use App Password (if 2FA enabled)");
       console.error("  3. 'Less secure app access' disabled in Gmail");
-      console.error("\n📖 See EMAIL_SETUP.md for detailed instructions");
     } else if (error.code === 'ECONNECTION' || error.code === 'ETIMEDOUT') {
       console.error("\n🌐 Connection Error - Possible causes:");
       console.error("  1. Firewall blocking SMTP port 587");
       console.error("  2. Network connectivity issues");
-      console.error("  3. Incorrect SMTP host or port");
+      console.error("  3. Incorrect SMTP host or port (try port 465)");
     } else if (error.code === 'ESOCKET') {
       console.error("\n🔒 SSL Certificate Error - Possible causes:");
       console.error("  1. Corporate proxy intercepting SSL");
-      console.error("  2. Antivirus software scanning HTTPS traffic");
-      console.error("  3. Network security software doing SSL inspection");
-      console.error("\n✅ Already configured to bypass this in development");
+      console.error("  2. Network security software doing SSL inspection");
     }
     
     return false;
