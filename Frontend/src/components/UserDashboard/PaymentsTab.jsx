@@ -3,6 +3,13 @@ import { API_URL } from '@/lib/api';
 
 import { CreditCard, DollarSign, Ticket } from 'lucide-react';
 
+// Helper to handle both Cloudinary URLs and relative paths
+const getImageUrl = (imagePath) => {
+  if (!imagePath) return null;
+  if (imagePath.startsWith('http')) return imagePath;
+  return `${API_URL}${imagePath.startsWith('/') ? '' : '/'}${imagePath}`;
+};
+
 const StatCard = ({ title, value, icon: Icon, color }) => (
   <div className="relative overflow-hidden bg-white dark:bg-gradient-to-br dark:from-gray-900 dark:to-gray-800 p-5 rounded-2xl border border-gray-200 dark:border-gray-700/50 shadow-lg group hover:shadow-xl hover:scale-[1.02] transition-all duration-300">
     <div className={`absolute -top-10 -right-10 w-32 h-32 ${color} opacity-10 dark:opacity-20 blur-3xl rounded-full`}></div>
@@ -54,7 +61,7 @@ export default function PaymentsTab({ t, myPayments, loadingPayments }) {
                 <div className="flex items-center gap-4">
                    {payment.businessId?.profileImage ? (
                       <img 
-                        src={`${API_URL}${payment.businessId.profileImage}`}
+                        src={getImageUrl(payment.businessId.profileImage)}
                         alt={payment.businessId.name}
                         className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl object-cover bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700"
                         onError={(e) => { e.target.style.display = 'none'; e.target.nextSibling.style.display = 'flex'; }}

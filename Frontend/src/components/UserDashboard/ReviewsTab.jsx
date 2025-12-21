@@ -1,7 +1,14 @@
 "use client";
 import { API_URL } from '@/lib/api';
 
-import { Star, MessageSquare, Calendar, Clock, Ticket, Building2, MapPin, Phone, Mail } from 'lucide-react';
+import { MessageSquare, Star } from 'lucide-react';
+
+// Helper to handle both Cloudinary URLs and relative paths
+const getImageUrl = (imagePath) => {
+  if (!imagePath) return null;
+  if (imagePath.startsWith('http')) return imagePath;
+  return `${API_URL}${imagePath.startsWith('/') ? '' : '/'}${imagePath}`;
+};
 
 const StarRating = ({ rating }) => (
   <div className="flex gap-1">
@@ -63,7 +70,7 @@ export default function ReviewsTab({ t, myReviews, loadingReviews }) {
                  <div className="flex items-center gap-4">
                     {review.businessId?.profileImage ? (
                       <img 
-                         src={`${API_URL}${review.businessId.profileImage}`}
+                         src={getImageUrl(review.businessId.profileImage)}
                          alt={review.businessId.name}
                          className="w-12 h-12 rounded-xl object-cover border border-gray-200 dark:border-gray-700"
                          onError={(e) => { e.target.style.display = 'none'; e.target.nextSibling.style.display = 'flex'; }}

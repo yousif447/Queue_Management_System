@@ -7,6 +7,13 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 import toast from 'react-hot-toast';
 
+// Helper to handle both Cloudinary URLs and relative paths
+const getImageUrl = (imagePath) => {
+  if (!imagePath) return null;
+  if (imagePath.startsWith('http')) return imagePath;
+  return `${API_URL}${imagePath.startsWith('/') ? '' : '/'}${imagePath}`;
+};
+
 export default function PaymentPage() {
   const { t } = useTranslations();
   const router = useRouter();
@@ -277,7 +284,7 @@ export default function PaymentPage() {
                 {/* Business Photo */}
                 {businessData?.profileImage ? (
                   <img 
-                    src={`${API_URL}${businessData.profileImage}`}
+                    src={getImageUrl(businessData.profileImage)}
                     alt={businessData.name}
                     className="w-20 h-20 md:w-24 md:h-24 rounded-2xl object-cover flex-shrink-0 border-4 border-white dark:border-gray-700 shadow-xl ring-2 ring-emerald-500/20"
                   />

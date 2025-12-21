@@ -6,6 +6,13 @@ import { useState } from "react";
 import toast from "react-hot-toast";
 import ReviewModal from '../ReviewModal';
 
+// Helper to handle both Cloudinary URLs and relative paths
+const getImageUrl = (imagePath) => {
+  if (!imagePath) return null;
+  if (imagePath.startsWith('http')) return imagePath;
+  return `${API_URL}${imagePath.startsWith('/') ? '' : '/'}${imagePath}`;
+};
+
 export default function MyTicketsTab({ t, myTickets, loadingTickets, setMyTickets }) {
   const [cancellingId, setCancellingId] = useState(null);
   const [reviewingTicket, setReviewingTicket] = useState(null);
@@ -131,7 +138,7 @@ export default function MyTicketsTab({ t, myTickets, loadingTickets, setMyTicket
                        {/* Business Photo/Logo or Initials */}
                   {ticket.businessId?.profileImage ? (
                     <img 
-                      src={`${API_URL}${ticket.businessId.profileImage}`}
+                      src={getImageUrl(ticket.businessId.profileImage)}
                       alt={ticket.businessId.name}
                       className="w-12 h-12 rounded-xl object-cover bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700"
                       onError={(e) => { e.target.style.display = 'none'; e.target.nextSibling.style.display = 'flex'; }}

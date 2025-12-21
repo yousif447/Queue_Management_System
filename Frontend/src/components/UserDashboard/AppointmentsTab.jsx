@@ -4,6 +4,13 @@ import { API_URL, authFetch } from '@/lib/api';
 import { Calendar, Clock, MapPin, Phone } from 'lucide-react';
 import { useState } from 'react';
 
+// Helper to handle both Cloudinary URLs and relative paths
+const getImageUrl = (imagePath) => {
+  if (!imagePath) return null;
+  if (imagePath.startsWith('http')) return imagePath;
+  return `${API_URL}${imagePath.startsWith('/') ? '' : '/'}${imagePath}`;
+};
+
 export default function AppointmentsTab({ t, myTickets, loadingTickets }) {
   const [completedTickets, setCompletedTickets] = useState([]);
   const [loadingCompleted, setLoadingCompleted] = useState(false);
@@ -87,7 +94,7 @@ export default function AppointmentsTab({ t, myTickets, loadingTickets }) {
                       <div className="flex items-center gap-3">
                         {ticket.businessId?.profileImage ? (
                           <img 
-                            src={`${API_URL}${ticket.businessId.profileImage}`}
+                            src={getImageUrl(ticket.businessId.profileImage)}
                             alt={ticket.businessId.name}
                             className="w-12 h-12 rounded-xl object-cover bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700"
                             onError={(e) => { e.target.style.display = 'none'; e.target.nextSibling.style.display = 'flex'; }}

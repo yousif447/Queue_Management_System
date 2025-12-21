@@ -54,23 +54,26 @@ export default function ProfilePhotoUpload({ currentImage, onImageChange, size =
 
   return (
     <div className="flex flex-col items-center gap-4">
-      <div className={`relative ${sizeClasses[size]} rounded-2xl overflow-hidden border-4 border-gray-200 dark:border-gray-700 bg-gray-100 dark:bg-gray-800`}>
-        {preview ? (
+      <div className={`relative ${sizeClasses[size]} rounded-2xl overflow-hidden border-4 border-gray-200 dark:border-gray-700`}>
+        {/* Base background (fallback) */}
+        <div className="absolute inset-0 bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-gray-400 z-0">
+          {!preview && <FaCamera size={size === "small" ? 24 : size === "medium" ? 32 : 48} />}
+        </div>
+        
+        {/* Preview Image - above background */}
+        {preview && (
           <Image
             src={preview}
             alt="Profile"
             fill
-            className="object-cover"
+            className="object-cover z-10"
           />
-        ) : (
-          <div className="w-full h-full flex items-center justify-center text-gray-400">
-            <FaCamera size={size === "small" ? 24 : size === "medium" ? 32 : 48} />
-          </div>
         )}
         
+        {/* Edit overlay - above everything */}
         <label
           htmlFor="photo-upload"
-          className="absolute inset-0 bg-black bg-opacity-0 hover:bg-opacity-40 transition-all cursor-pointer flex items-center justify-center group"
+          className="absolute inset-0 z-20 bg-transparent hover:bg-black/40 transition-all cursor-pointer flex items-center justify-center group"
         >
           <FaCamera className="text-white opacity-0 group-hover:opacity-100 transition-opacity" size={24} />
         </label>

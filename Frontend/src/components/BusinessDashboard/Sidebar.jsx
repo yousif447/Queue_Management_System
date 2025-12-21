@@ -6,6 +6,13 @@ import ThemeToggle from '@/components/ThemeToggle';
 import { BiLogOut } from 'react-icons/bi';
 import { FaTimes } from "react-icons/fa";
 
+// Helper to handle both Cloudinary URLs and relative paths
+const getImageUrl = (imagePath) => {
+  if (!imagePath) return null;
+  if (imagePath.startsWith('http')) return imagePath;
+  return `${API_URL}${imagePath.startsWith('/') ? '' : '/'}${imagePath}`;
+};
+
 export default function Sidebar({ t, navItems, activeTab, setActiveTab, isSidebarOpen, setIsSidebarOpen, businessData }) {
   return (
     <>
@@ -31,7 +38,7 @@ export default function Sidebar({ t, navItems, activeTab, setActiveTab, isSideba
             <div className="flex items-center gap-3">
               {businessData?.profileImage ? (
                 <img 
-                  src={`${API_URL}${businessData.profileImage}`} 
+                  src={getImageUrl(businessData.profileImage)} 
                   alt={businessData.name} 
                   className="w-10 h-10 rounded-lg object-cover border border-gray-200 dark:border-gray-700 bg-white"
                 />

@@ -2,6 +2,7 @@ const express = require("express");
 const router = express.Router();
 const authController = require("../controllers/authController");
 const { protect } = require("../middlewares/authMiddleware");
+const upload = require("../middlewares/uploadMiddleware");
 const passport = require("passport");
 
 const {
@@ -13,7 +14,8 @@ const {
   updatePasswordValidation,
 } = require("../validations/authValidation");
 
-router.post("/register", registerValidation, authController.registerUser);
+// Register with optional profile image
+router.post("/register", upload.single('profileImage'), registerValidation, authController.registerUser);
 router.post("/register-business", registerBusinessValidation, authController.registerBusiness); 
 router.post("/login", loginValidation, authController.login);
 // DEV-only route to set/create admin password. Requires DEV_ADMIN_SECRET in env and header 'x-dev-secret'

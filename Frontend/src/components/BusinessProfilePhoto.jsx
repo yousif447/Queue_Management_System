@@ -8,6 +8,7 @@ import { FaCamera, FaUser } from 'react-icons/fa';
 export default function BusinessProfilePhoto({ businessData, isDisabled = true, onPhotoUpdated }) {
   const [uploading, setUploading] = useState(false);
   const [imageUrl, setImageUrl] = useState(businessData?.profileImage || null);
+  const [localPreview, setLocalPreview] = useState(null); // For instant preview
   const fileInputRef = useRef(null);
 
   const handleFileSelect = async (e) => {
@@ -23,6 +24,13 @@ export default function BusinessProfilePhoto({ businessData, isDisabled = true, 
       toast.error('Image size should be less than 5MB');
       return;
     }
+
+    // Show instant local preview
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setLocalPreview(reader.result);
+    };
+    reader.readAsDataURL(file);
 
     setUploading(true);
 
@@ -44,6 +52,7 @@ export default function BusinessProfilePhoto({ businessData, isDisabled = true, 
       
       if (data.data?.profileImage) {
         setImageUrl(data.data.profileImage);
+        setLocalPreview(null); // Clear preview, use server URL
       }
 
       if (onPhotoUpdated) {
@@ -52,34 +61,44 @@ export default function BusinessProfilePhoto({ businessData, isDisabled = true, 
     } catch (error) {
       console.error('Upload error:', error);
       toast.error('Failed to upload photo');
+      setLocalPreview(null); // Clear preview on error
     } finally {
       setUploading(false);
     }
   };
 
-  const profileImageUrl = imageUrl 
-    ? `${API_URL}${imageUrl}`
-    : null;
+  // Handle both Cloudinary URLs (http...) and relative paths
+  // localPreview takes priority for instant feedback
+  const profileImageUrl = localPreview || (imageUrl 
+    ? (imageUrl.startsWith('http') ? imageUrl : `${API_URL}${imageUrl}`)
+    : null);
 
   return (
-    <div className="relative w-32 h-32 rounded-2xl overflow-hidden border-4 border-emerald-500 dark:border-emerald-400 bg-gray-100 dark:bg-gray-800">
-      {profileImageUrl ? (
+    <div className="relative w-32 h-32 rounded-2xl overflow-hidden border-4 border-emerald-500 dark:border-emerald-400">
+      {/* Base background (fallback) */}
+      <div className="absolute inset-0 bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-gray-400 z-0">
+        {!profileImageUrl && <FaUser size={48} />}
+      </div>
+      
+      {/* Profile Image - above background */}
+      {profileImageUrl && (
         <img
           src={profileImageUrl}
           alt={businessData?.name || 'Business'}
-          className="w-full h-full object-cover"
+          className="absolute inset-0 w-full h-full object-cover z-10"
+          onError={(e) => {
+            console.log('Image failed to load:', profileImageUrl);
+            e.target.style.display = 'none';
+          }}
         />
-      ) : (
-        <div className="w-full h-full flex items-center justify-center text-gray-400">
-          <FaUser size={48} />
-        </div>
       )}
       
+      {/* Edit overlay - above everything */}
       {!isDisabled && (
         <>
           <label
             htmlFor="business-photo-upload"
-            className={`absolute inset-0 bg-black bg-opacity-0 hover:bg-opacity-50 transition-all ${uploading ? 'cursor-wait' : 'cursor-pointer'} flex items-center justify-center group`}
+            className="absolute inset-0 z-20 bg-transparent hover:bg-black/50 transition-all cursor-pointer flex items-center justify-center group"
           >
             {uploading ? (
               <div className="w-8 h-8 border-4 border-white/30 border-t-white rounded-full animate-spin"></div>

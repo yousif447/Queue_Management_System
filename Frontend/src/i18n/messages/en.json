@@ -118,7 +118,8 @@
     "free": "Free",
     "processing": "Processing...",
     "plan": "Plan",
-    "fullyBooked": "Fully Booked"
+    "fullyBooked": "Fully Booked",
+    "optional": "Optional"
   },
   "about": {
     "title": "About QuickQueue",
@@ -727,7 +728,8 @@
       "namePlaceholder": "Enter Your Name",
       "emailPlaceholder": "email@example.com",
       "phonePlaceholder": "01234567890",
-      "passwordPlaceholder": "Create a Password"
+      "passwordPlaceholder": "Create a Password",
+      "profilePhoto": "Profile Photo"
     },
     "business": {
       "title": "Create Business Account",

@@ -26,16 +26,37 @@ if (clientID && clientSecret) {
       },
       async (accessToken, refreshToken, profile, done) => {
         try {
+          // Get Google profile photo if available
+          const googlePhoto = profile.photos && profile.photos.length > 0 
+            ? profile.photos[0].value 
+            : null;
+          
           let user = await User.findOne({ email: profile.emails[0].value });
 
           if (!user) {
-            user = await User.create({
+            // Create new user with Google profile photo
+            const userData = {
               name: profile.displayName,
               email: profile.emails[0].value,
               googleId: profile.id,
               authProvider: "google",
               isEmailVerified: true, // Google emails are pre-verified
-            });
+            };
+            
+            // Add profile photo if available
+            if (googlePhoto) {
+              userData.profileImage = googlePhoto;
+            }
+            
+            user = await User.create(userData);
+            console.log(`✅ New user created via Google OAuth: ${user.email}${googlePhoto ? ' (with profile photo)' : ''}`);
+          } else {
+            // If existing user doesn't have a profile image, use Google's
+            if (!user.profileImage && googlePhoto) {
+              user.profileImage = googlePhoto;
+              await user.save({ validateBeforeSave: false });
+              console.log(`📸 Updated existing user's profile photo from Google: ${user.email}`);
+            }
           }
 
           done(null, user);

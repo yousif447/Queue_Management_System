@@ -97,32 +97,56 @@ exports.registerUser = async (req, res) => {
     
     console.log('Registration request body:', req.body);
     console.log('Phone value:', phone, 'Type:', typeof phone);
+    console.log('Profile image file:', req.file ? 'Present' : 'Not provided');
 
 
     // Check if user already exists
     const existing = await User.findOne({ email });
-    const existingPhone = await User.findOne({ phone });
     if (existing) {
       return res.status(400).json({
         status: "fail",
         message: "Email already in use",
       });
     }
-    if (existingPhone) {
-      return res.status(400).json({
-        status: "fail",
-        message: "Phone already in use",
-      });
+    
+    // Only check phone if provided
+    if (phone) {
+      const existingPhone = await User.findOne({ phone });
+      if (existingPhone) {
+        return res.status(400).json({
+          status: "fail",
+          message: "Phone already in use",
+        });
+      }
+    }
+
+    // Handle optional profile image upload
+    let profileImage = null;
+    if (req.file) {
+      try {
+        const { uploadToCloudinary } = require("../utils/cloudinaryConfig");
+        const result = await uploadToCloudinary(req.file.buffer, 'user_profiles');
+        profileImage = result.secure_url;
+        console.log('Profile image uploaded to Cloudinary:', profileImage);
+      } catch (uploadError) {
+        console.error('Failed to upload profile image:', uploadError);
+        // Continue registration without image
+      }
     }
 
     // Create new user
-    const user = await User.create({
+    const userData = {
       name,
       email,
       password,
-      phone,
       role: "user",
-    });
+    };
+    
+    // Add optional fields
+    if (phone) userData.phone = phone;
+    if (profileImage) userData.profileImage = profileImage;
+    
+    const user = await User.create(userData);
 
     // Create token payload
     const payload = {

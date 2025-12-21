@@ -1,7 +1,8 @@
 "use client";
+import ProfilePhotoUpload from '@/components/ProfilePhotoUpload';
 import { useTranslations } from '@/hooks/useTranslations';
 import { API_URL } from '@/lib/api';
-import { ArrowRight, Lock, Mail, Phone, Shield, Star, User, UserPlus, Zap, AlertCircle } from 'lucide-react';
+import { AlertCircle, ArrowRight, Lock, Mail, Phone, Shield, Star, User, UserPlus, Zap } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
@@ -12,6 +13,7 @@ export default function Page() {
   const { t } = useTranslations();
   const API = `${API_URL}/api/v1/auth/register`;
   const [user, setUser] = useState({name: '', email: '', password: '', phone: ''});
+  const [profileImage, setProfileImage] = useState(null); // Optional profile photo
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   
@@ -52,11 +54,28 @@ export default function Page() {
     setError('');
     setLoading(true);
     try {
-      const res = await fetch(API, {
-        method: "POST",
-        headers: {"Content-Type": "application/json"},
-        body: JSON.stringify(user)
-      });
+      // Use FormData if there's a profile image, otherwise use JSON
+      let res;
+      if (profileImage) {
+        const formData = new FormData();
+        formData.append('name', user.name);
+        formData.append('email', user.email);
+        formData.append('password', user.password);
+        if (user.phone) formData.append('phone', user.phone);
+        formData.append('profileImage', profileImage);
+        
+        res = await fetch(API, {
+          method: "POST",
+          body: formData
+        });
+      } else {
+        res = await fetch(API, {
+          method: "POST",
+          headers: {"Content-Type": "application/json"},
+          body: JSON.stringify(user)
+        });
+      }
+      
       const data = await res.json();
       
       if(!res.ok) {
@@ -128,6 +147,17 @@ export default function Page() {
               <p className="text-red-700 dark:text-red-400 text-sm font-medium">{error}</p>
             </div>
           )}
+
+          {/* Optional Profile Photo */}
+          <div className="mb-6">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3 text-center">
+              {t('register.customer.profilePhoto') || 'Profile Photo'} <span className="text-gray-400 font-normal">({t('common.optional') || 'Optional'})</span>
+            </label>
+            <ProfilePhotoUpload 
+              onImageChange={setProfileImage} 
+              size="medium"
+            />
+          </div>
 
           <div className="space-y-4 mb-6">
             <div>
