@@ -110,7 +110,7 @@ export default function Navbar() {
           </Link>
 
           {/* Desktop Navigation */}
-          <div className="hidden md:flex items-center gap-8">
+          <div className="hidden lg:flex items-center gap-8">
             <ul className="flex items-center gap-1">
               {navLinks.map((link) => (
                 <li key={link.href}>
@@ -206,7 +206,7 @@ export default function Navbar() {
             <ThemeToggle />
             
             {/* Mobile Menu Button */}
-            <button onClick={() => setIsOpen(!isOpen)} className="md:hidden p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
+            <button onClick={() => setIsOpen(!isOpen)} className="lg:hidden p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
               {isOpen ? <X className="w-6 h-6 text-gray-600 dark:text-gray-300" /> : <Menu className="w-6 h-6 text-gray-600 dark:text-gray-300" />}
             </button>
           </div>
@@ -215,7 +215,7 @@ export default function Navbar() {
 
       {/* Mobile Menu */}
       {isOpen && (
-        <div className="md:hidden fixed inset-0 top-20 z-40 bg-white/95 dark:bg-gray-900/95 backdrop-blur-xl animate-fade-in">
+        <div className="lg:hidden fixed inset-0 top-20 z-40 bg-white/95 dark:bg-gray-900/95 backdrop-blur-xl animate-fade-in">
           <div className="container mx-auto px-6 py-8">
             <ul className="space-y-2">
               {navLinks.map((link) => (
