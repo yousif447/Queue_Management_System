@@ -158,6 +158,30 @@ export const SocketProvider = ({ children }) => {
       setConnected(true);
     });
 
+    // Listen for new notifications (Unified Event)
+    socket.on('newNotification', (data) => {
+      console.log('🔔 New Notification:', data);
+      const notification = {
+        id: data.id || Date.now(),
+        type: data.type,
+        message: data.message,
+        timestamp: data.timestamp || new Date(),
+        isRead: data.isRead || false,
+        data: data.data || data
+      };
+      
+      setNotifications(prev => {
+        // Prevent duplicates if possible (MongoDB ID check)
+        if (notification.id && prev.some(n => n.id === notification.id)) return prev;
+        return [notification, ...prev].slice(0, 50);
+      });
+
+      // Optional: Show toast for all new notifications
+      // But avoid duplicating if specific events (like ticketBooked) also show toasts
+      // Given ticketBooked and others still emit their own toasts, we might want to be selective
+      // However, the new service is designed to be the primary source.
+    });
+
     // ticketCreated - When a new ticket is booked (per documentation)
     socket.on('ticketCreated', (data) => {
       console.log('🎟️ Ticket Created:', data);

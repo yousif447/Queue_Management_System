@@ -3,9 +3,7 @@ const Ticket = require("../models/ticketSchema");
 const Queue = require("../models/queueSchema");
 const Business = require("../models/businessSchema");
 const etaCalculator = require("../utils/etaCalculator");
-const Notification = require("../models/notificationSchema");
-const Payment = require("../models/paymentSchema");
-const { sendNotificationEmail } = require("../utils/emailService");
+const NotificationService = require("../utils/notificationService");
 const { checkBookingLimit, incrementBookingCount } = require("../utils/subscriptionLimits");
 const crypto = require("crypto");
 
@@ -167,26 +165,18 @@ exports.createTicket = async (req, res) => {
       }
     }
 
-    // Create Notification
+    // Create Notification & Send Email via NotificationService
     if (userId) {
-       Notification.create({
+       await NotificationService.createNotification({
           userId,
           businessId,
           ticketId: ticket._id,
           queueId,
           type: 'ticket',
-          message: `Ticket #${ticket.ticketNumber} booked successfully`
-       }).catch(err => console.error("Notification creation failed", err));
-       
-       if (req.user && req.user.email) {
-          sendNotificationEmail({
-             email: req.user.email,
-             name: req.user.name,
-             subject: "Ticket Booked 🎟️",
-             message: `Your ticket #${ticket.ticketNumber} has been booked successfully.`,
-             type: 'ticket'
-          }).catch(err => console.error("Email failed", err));
-       }
+          message: `Ticket #${ticket.ticketNumber} booked successfully`,
+          userEmail: req.user?.email,
+          userName: req.user?.name,
+       }).catch(err => console.error("Notification trigger failed:", err));
     }
 
     return res.status(201).json({
@@ -499,6 +489,18 @@ exports.cancelTicket = async (req, res) => {
       }
     }
 
+    // Send Notification
+    if (ticket.userId) {
+      NotificationService.createNotification({
+        userId: ticket.userId,
+        businessId: ticket.businessId,
+        ticketId: ticket._id,
+        type: 'system',
+        message: `Your ticket #${ticket.ticketNumber} has been cancelled.`,
+        emailSubject: "Ticket Cancelled ❌"
+      }).catch(err => console.error("Cancel notification failed:", err));
+    }
+
     return res.json({
       status: "success",
       message: "Ticket cancelled",
@@ -561,33 +563,21 @@ exports.callTicket = async (req, res) => {
     }
 
     // ------------------------------------------------------------
-    // NOTIFICATION & EMAIL TRIGGER
+    // NOTIFICATION & EMAIL TRIGGER via NotificationService
     // ------------------------------------------------------------
     try {
       if (ticket.userId) {
-        // 1. Create DB Notification
-        await Notification.create({
-          userId: ticket.userId._id || ticket.userId, // handle populated or ID
+        await NotificationService.createNotification({
+          userId: ticket.userId._id || ticket.userId,
           businessId: ticket.businessId,
           ticketId: ticket._id,
           queueId: ticket.queueId,
           type: 'turn',
           message: `It's your turn! Ticket #${ticket.ticketNumber} is being called.`,
+          userEmail: ticket.userId.email,
+          userName: ticket.userId.name,
+          emailSubject: "It's Your Turn! 🔔"
         });
-
-        // 2. Send Email
-        const userEmail = ticket.userId.email;
-        if (userEmail) {
-          // run async without awaiting to return response faster? 
-          // No, better await to ensure it fires, but catch error.
-          await sendNotificationEmail({
-            email: userEmail,
-            name: ticket.userId.name || 'User',
-            subject: "It's Your Turn! 🔔",
-            message: `It's your turn! Please proceed to the counter for Ticket #${ticket.ticketNumber}.`,
-            type: 'turn'
-          });
-        }
       }
     } catch (notifError) {
       console.error("Notification trigger failed:", notifError);
@@ -750,6 +740,18 @@ exports.noShowTicket = async (req, res) => {
       }
     }
 
+    // Send Notification
+    if (ticket.userId) {
+      NotificationService.createNotification({
+        userId: ticket.userId,
+        businessId: ticket.businessId,
+        ticketId: ticket._id,
+        type: 'system',
+        message: `You missed your turn for ticket #${ticket.ticketNumber}.`,
+        emailSubject: "Missed Appointment ⚠️"
+      }).catch(err => console.error("No-show notification failed:", err));
+    }
+
     return res.json({
       status: "success",
       message: "Ticket marked as no-show",
@@ -798,6 +800,18 @@ exports.reactivateTicket = async (req, res) => {
       if (ticket.queueId) {
         socketIO.emitQueueUpdate(ticket.businessId.toString(), ticket.queueId.toString());
       }
+    }
+
+    // Send Notification
+    if (ticket.userId) {
+      NotificationService.createNotification({
+        userId: ticket.userId,
+        businessId: ticket.businessId,
+        ticketId: ticket._id,
+        type: 'ticket',
+        message: `Your ticket #${ticket.ticketNumber} has been reactivated.`,
+        emailSubject: "Ticket Reactivated 🔄"
+      }).catch(err => console.error("Reactivate notification failed:", err));
     }
 
     return res.json({
@@ -858,6 +872,18 @@ exports.markTicketPaid = async (req, res) => {
     const socketIO = req.app.get("socketIO");
     if (socketIO) {
       socketIO.emitTicketUpdated(ticket.businessId.toString(), ticket);
+    }
+
+    // Send Notification
+    if (ticket.userId) {
+      NotificationService.createNotification({
+        userId: ticket.userId,
+        businessId: ticket.businessId,
+        ticketId: ticket._id,
+        type: 'payment',
+        message: `Your payment for Ticket #${ticket.ticketNumber} has been confirmed.`,
+        emailSubject: "Payment Confirmed 💳"
+      }).catch(err => console.error("Paid notification failed:", err));
     }
 
     return res.json({

@@ -2,7 +2,7 @@ const Payment = require("../models/paymentSchema");
 const Ticket = require("../models/ticketSchema");
 const Stripe = require("stripe");
 const User = require("../models/userSchema");
-const Notification = require("../models/notificationSchema");
+const NotificationService = require("../utils/notificationService");
 const { sendNotificationEmail } = require("../utils/emailService");
 
 // Helper function to get Stripe instance with proper error handling
@@ -211,7 +211,7 @@ exports.createPayment = async (req, res) => {
     await ticket.save();
 
     // ------------------------------------------
-    // NOTIFICATION (Direct Payment)
+    // NOTIFICATION (Direct Payment) via NotificationService
     // ------------------------------------------
     try {
       if (req.user) {
@@ -225,34 +225,26 @@ exports.createPayment = async (req, res) => {
             socketTitle = "Payment Due";
          }
 
-         await Notification.create({
+         await NotificationService.createNotification({
              userId: req.user.id,
              businessId: ticket.businessId,
              ticketId: ticketId,
-             paymentId: payment._id,
              type: 'payment',
              message: emailMessage,
+             userEmail: req.user.email,
+             userName: req.user.name,
+             emailSubject: emailSubject
          });
-         
-          if (req.user.email) {
-             await sendNotificationEmail({
-                email: req.user.email,
-                name: req.user.name,
-                subject: emailSubject,
-                message: emailMessage,
-                type: 'payment'
-             });
-          }
       
-          const socketIO = req.app.get("socketIO");
-          if (socketIO && !req.body.suppressUserSocket) {
-             socketIO.emitToUser(req.user.id, 'paymentUpdate', {
-                 status: paymentMethod === 'cash' ? 'pending' : 'success',
-                 title: socketTitle,
-                 message: emailMessage,
-                 ticketId: ticketId
-             });
-          }
+         const socketIO = req.app.get("socketIO");
+         if (socketIO && !req.body.suppressUserSocket) {
+            socketIO.emitToUser(req.user.id, 'paymentUpdate', {
+                status: paymentMethod === 'cash' ? 'pending' : 'success',
+                title: socketTitle,
+                message: emailMessage,
+                ticketId: ticketId
+            });
+         }
       }
     } catch (e) { console.log('Notification error:', e); }
 
@@ -686,32 +678,22 @@ exports.stripeWebhook = async (req, res) => {
       }
       
       // ------------------------------------------
-      // NOTIFICATION (Webhook Payment)
+      // NOTIFICATION (Webhook Payment) via NotificationService
       // ------------------------------------------
       try {
         const user = await User.findById(userId);
         if (user) {
-             await Notification.create({
+             await NotificationService.createNotification({
                  userId: userId,
                  businessId: businessId,
                  ticketId: ticketId,
-                 // paymentId: payment._id, // payment variable not easily accessible here unless captured from create
                  type: 'payment',
                  message: `Payment successful for Ticket #${ticket.ticketNumber}`,
+                 userEmail: user.email,
+                 userName: user.name,
+                 emailSubject: "Payment Confirmed 💳"
              });
 
-             if (user.email) {
-                 await sendNotificationEmail({
-                     email: user.email,
-                     name: user.name,
-                     subject: "Payment Confirmed 💳",
-                     message: `Your payment of $${amountPaid} for Ticket #${ticket.ticketNumber} was successful.`,
-                     type: 'payment'
-                 });
-             }
-             
-
-             /*
              if (socketIO) {
                 socketIO.emitToUser(userId, 'paymentUpdate', {
                     status: 'success',
@@ -719,7 +701,6 @@ exports.stripeWebhook = async (req, res) => {
                     ticketId: ticketId
                 });
              }
-             */
          }
       } catch (e) { console.error('Webhook Notification Error:', e); }
     }
