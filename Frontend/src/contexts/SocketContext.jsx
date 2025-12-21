@@ -160,7 +160,7 @@ export const SocketProvider = ({ children }) => {
 
     // Listen for new notifications (Unified Event)
     socket.on('newNotification', (data) => {
-      console.log('🔔 New Notification:', data);
+      console.log('🔔 New Notification Received:', data);
       const notification = {
         id: data.id || Date.now(),
         type: data.type,
@@ -176,10 +176,15 @@ export const SocketProvider = ({ children }) => {
         return [notification, ...prev].slice(0, 50);
       });
 
-      // Optional: Show toast for all new notifications
-      // But avoid duplicating if specific events (like ticketBooked) also show toasts
-      // Given ticketBooked and others still emit their own toasts, we might want to be selective
-      // However, the new service is designed to be the primary source.
+      // Unified Toast Notification
+      const toastTitle = {
+        ticket: 'Ticket Update 🎟️',
+        turn: 'Your Turn! 🔔',
+        payment: 'Payment Update 💳',
+        system: 'System Alert 📢'
+      }[data.type] || 'New Notification';
+
+      showNotification(toastTitle, data.message, data.type);
     });
 
     // ticketCreated - When a new ticket is booked (per documentation)
@@ -347,16 +352,29 @@ export const SocketProvider = ({ children }) => {
     };
   }, [socket]);
 
-  const joinQueue = (queueId) => {
-    if (socket) {
-      socket.emit('joinQueue', queueId);
+  const [registeredUserId, setRegisteredUserId] = useState(null);
+  
+  // Register/Re-register logic
+  useEffect(() => {
+    if (socket && connected && registeredUserId) {
+      console.log('👤 Re-registering user room:', registeredUserId);
+      socket.emit('joinUserRoom', { userId: registeredUserId });
+    }
+  }, [socket, connected, registeredUserId]);
+
+  const registerUser = (userId) => {
+    if (userId) {
+      setRegisteredUserId(userId);
+      if (socket && connected) {
+        console.log('👤 Joining user room:', userId);
+        socket.emit('joinUserRoom', { userId });
+      }
     }
   };
 
-  const registerUser = (userId) => {
-    if (socket && userId) {
-      console.log('👤 Joining user room:', userId);
-      socket.emit('joinUserRoom', { userId });
+  const joinQueue = (queueId) => {
+    if (socket) {
+      socket.emit('joinQueue', queueId);
     }
   };
 
@@ -365,8 +383,6 @@ export const SocketProvider = ({ children }) => {
       socket.emit('leaveQueue', queueId);
     }
   };
-
-
 
   const removeNotification = (id) => {
     setNotifications(prev => prev.filter(n => n.id !== id));

@@ -544,14 +544,15 @@ exports.callTicket = async (req, res) => {
 
     const socketIO = req.app.get("socketIO");
     if (socketIO) {
+      // Emit to business room
       socketIO.emitTicketCalled(
         ticket.businessId.toString(),
         ticket,
-        ticket.userId?._id?.toString(),
+        null // Removed userId to avoid duplicate: Handled by NotificationService.newNotification
       );
       socketIO.emitTicketUpdated(ticket.businessId.toString(), ticket);
       
-      // Explicit Backup Emission
+      /* Redundant: Handled by NotificationService.newNotification
       const uId = ticket.userId?._id?.toString() || (ticket.userId && ticket.userId.toString());
       if (uId) {
           socketIO.emitToUser(uId, 'yourTicketCalled', {
@@ -560,6 +561,7 @@ exports.callTicket = async (req, res) => {
               timestamp: new Date()
           });
       }
+      */
     }
 
     // ------------------------------------------------------------

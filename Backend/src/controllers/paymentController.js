@@ -236,6 +236,7 @@ exports.createPayment = async (req, res) => {
              emailSubject: emailSubject
          });
       
+         /* Redundant: Handled by NotificationService.newNotification
          const socketIO = req.app.get("socketIO");
          if (socketIO && !req.body.suppressUserSocket) {
             socketIO.emitToUser(req.user.id, 'paymentUpdate', {
@@ -245,6 +246,7 @@ exports.createPayment = async (req, res) => {
                 ticketId: ticketId
             });
          }
+         */
       }
     } catch (e) { console.log('Notification error:', e); }
 
@@ -694,6 +696,7 @@ exports.stripeWebhook = async (req, res) => {
                  emailSubject: "Payment Confirmed 💳"
              });
 
+             /* Redundant: Handled by NotificationService.newNotification
              if (socketIO) {
                 socketIO.emitToUser(userId, 'paymentUpdate', {
                     status: 'success',
@@ -701,6 +704,7 @@ exports.stripeWebhook = async (req, res) => {
                     ticketId: ticketId
                 });
              }
+             */
          }
       } catch (e) { console.error('Webhook Notification Error:', e); }
     }
