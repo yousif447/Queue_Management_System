@@ -326,7 +326,8 @@
         "waiting": "⏳ Waiting... {count} people ahead of you",
         "waitingOne": "⏳ Waiting... 1 person ahead of you",
         "nextInLine": "🎯 You are next in line!",
-        "calculating": "⏳ Calculating your position..."
+        "calculating": "⏳ Calculating your position...",
+        "missed": "❌ You missed your turn."
       }
     },
     "tickets": {
@@ -1412,7 +1413,7 @@
       "disconnected": "Disconnected",
       "waiting": "WAITING",
       "serving": "SERVING",
-      "completed": "COMPLETED",
+      "complete": "COMPLETED",
       "pay": "Pay",
       "completeService": "✓ Complete Service",
       "inProgress": "⏰ In Progress",

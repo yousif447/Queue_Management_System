@@ -107,6 +107,10 @@ const io = new Server(server, {
 const socketIO = socketHandler(io);
 app.set("socketIO", socketIO);
 
+// Initialize notification service with socketIO
+const notificationService = require("./src/utils/notificationService");
+notificationService.init(socketIO);
+
 // Optional: JWT auth for Socket.IO
 io.use((socket, next) => {
   const token = socket.handshake.auth?.token;
