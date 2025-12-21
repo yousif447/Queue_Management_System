@@ -43,13 +43,15 @@ const createTransporter = () => {
   };
 
   // Optimization for common email services
-  if (mailHost.includes('gmail.com')) {
+  // Only use 'gmail' service shorthand if NO port is specified
+  // This allows users to force port 587 (STARTTLS) or 465 (SSL) by setting EMAIL_PORT
+  if (mailHost.includes('gmail.com') && !mailPort) {
     config.service = 'gmail';
-    console.log("🔹 Using pre-configured Gmail service");
+    console.log("🔹 Using pre-configured Gmail service (Port 465)");
   } else {
     config.host = mailHost;
     config.port = mailPort;
-    config.secure = mailPort === 465;
+    config.secure = mailPort === 465; // true for 465, false for 587
     console.log(`🔹 Using custom host: ${mailHost}:${mailPort} (secure: ${config.secure})`);
   }
 
