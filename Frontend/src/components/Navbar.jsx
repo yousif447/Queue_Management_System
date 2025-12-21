@@ -72,8 +72,7 @@ export default function Navbar() {
       document.cookie = 'accessToken=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
       document.cookie = 'refreshToken=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
       setIsAuthenticated(false);
-      router.push('/');
-      window.location.reload();
+      window.location.href = '/';
     } catch (error) {
       console.error('Logout error:', error);
       // Still try to clear and redirect even on error
@@ -81,7 +80,7 @@ export default function Navbar() {
       document.cookie = 'accessToken=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
       document.cookie = 'refreshToken=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
       setIsAuthenticated(false);
-      router.push('/');
+      window.location.href = '/';
     }
   };
 
