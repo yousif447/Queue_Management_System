@@ -328,8 +328,10 @@ export default function Home() {
         
         {/* Hero Section */}
         <div className="relative pt-10 px-4">
-          <h1 className="text-3xl sm:text-4xl md:text-4xl lg:text-5xl text-center font-bold gradient-text animate-fade-in mb-4 pb-4 big-scale">
-            {t('hero.title')}
+          <h1 className="text-3xl sm:text-4xl md:text-4xl lg:text-5xl text-center font-bold animate-fade-in mb-4 pb-4">
+            <span className="big-scale inline-block py-2 bg-gradient-to-r from-emerald-500 via-teal-600 to-cyan-600 bg-clip-text text-transparent drop-shadow-[0_0_15px_rgba(16,185,129,0.3)]">
+              {t('hero.title')}
+            </span>
           </h1>
           
           {/* Floating particles animation */}
