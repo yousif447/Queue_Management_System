@@ -51,12 +51,14 @@ const createSendTokens = async ({ entity, res, payload }) => {
     await entity.save({ validateBeforeSave: false });
 
     // Set httpOnly cookies for both refresh and access tokens
-    // Always use sameSite: 'none' and secure: true for cross-origin deployments
-    // This is required when frontend (Vercel) and backend (Back4App) are on different domains
+    // In production, we need sameSite: 'none' and secure: true for cross-origin (Vercel <-> Render)
+    // In development (localhost), we need secure: false because we don't have HTTPS
+    const isProduction = process.env.NODE_ENV === 'production';
+    
     const cookieOptions = {
       httpOnly: true,
-      secure: true, // Required for sameSite: 'none'
-      sameSite: 'none', // Required for cross-origin cookies
+      secure: isProduction, 
+      sameSite: isProduction ? 'none' : 'lax',
     };
 
     res.cookie("refreshToken", refreshTokenRaw, {

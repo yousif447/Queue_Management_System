@@ -1,13 +1,13 @@
 "use client";
-import { API_URL } from '@/lib/api';
 import EmailStep from '@/components/ForgotPassword/EmailStep';
 import OTPStep from '@/components/ForgotPassword/OTPStep';
 import ResetPasswordStep from '@/components/ForgotPassword/ResetPasswordStep';
 import StepHeader from '@/components/ForgotPassword/StepHeader';
 import { useTranslations } from '@/hooks/useTranslations';
+import { API_URL } from '@/lib/api';
+import { KeyRound, Mail, ShieldCheck } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
-import { KeyRound, Mail, ShieldCheck } from 'lucide-react';
 
 export default function page() {
   const { t } = useTranslations();
