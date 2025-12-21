@@ -303,17 +303,12 @@ exports.getMyTickets = async (req, res) => {
     const ticketsWithPosition = await Promise.all(tickets.map(async (t) => {
       const ticketObj = t.toObject();
       if (ticketObj.status === 'waiting' && ticketObj.queueId) {
-        // Count how many waiting tickets are ahead of this one (exclude unpaid online payments)
-        const aheadCount = await Ticket.countDocuments({
-          queueId: ticketObj.queueId._id,
-          status: 'waiting',
-          createdAt: { $lt: ticketObj.createdAt },
-          $or: [
-            { paymentStatus: "paid" },
-            { paymentMethod: "cash" },
-            { paymentMethod: { $exists: false } }
-          ]
-        });
+          // Count how many waiting tickets are ahead of this one (include ALL waiting tickets)
+          const aheadCount = await Ticket.countDocuments({
+            queueId: ticketObj.queueId._id,
+            status: 'waiting',
+            createdAt: { $lt: ticketObj.createdAt }
+          });
         ticketObj.position = aheadCount + 1;
       }
       return ticketObj;
