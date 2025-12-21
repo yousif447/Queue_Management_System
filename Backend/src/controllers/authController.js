@@ -337,13 +337,6 @@ exports.login = async (req, res) => {
       entityType = "business";
     }
 
-    // If not business, try admin
-    if (!user) {
-      const Admin = require("../models/adminSchema");
-      user = await Admin.findOne({ email }).select("+password");
-      entityType = "admin";
-    }
-
     console.log(`Login attempt for email=${email} matched entityType=${entityType} userExists=${!!user}`);
 
     if (!user) {

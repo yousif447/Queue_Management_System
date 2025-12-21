@@ -16,9 +16,7 @@ exports.dashboard = async (req, res) => {
     // Basic counts
     const userCount = await Users.countDocuments({ role: "user" });
 
-    const adminSchemaCount = await Admin.countDocuments();
-    const userSchemaAdminCount = await Users.countDocuments({ role: "admin" });
-    const adminCount = adminSchemaCount + userSchemaAdminCount;
+    const adminCount = await Admin.countDocuments();
     const businessUserCount = await Users.countDocuments({ role: "owner" });
     const businessCount = await Business.countDocuments();
     const activeBusinessCount = await Business.countDocuments({ status: "active" });
@@ -472,6 +470,68 @@ exports.createAdmin = async (req, res) => {
       status: "success",
       message: "Admin created successfully",
       admin: newAdmin,
+    });
+  } catch (err) {
+    res.status(500).json({
+      status: "error",
+      message: err.message,
+    });
+  }
+};
+
+// -------------------------
+// POST /api/v1/admin/admin/login
+// -------------------------
+exports.adminLogin = async (req, res) => {
+  try {
+    const { email, password } = req.body;
+
+    if (!email || !password) {
+      return res.status(400).json({
+        status: "fail",
+        message: "Please provide email and password",
+      });
+    }
+
+    // 1) Find admin and check if password is correct
+    const admin = await Admin.findOne({ email }).select("+password");
+
+    if (!admin || !(await admin.correctPassword(password, admin.password))) {
+      return res.status(401).json({
+        status: "fail",
+        message: "Incorrect email or password",
+      });
+    }
+
+    // 2) If everything ok, send token to client
+    const jwt = require("jsonwebtoken");
+    const signToken = (id) => {
+      return jwt.sign({ id, role: "admin" }, process.env.JWT_SECRET, {
+        expiresIn: process.env.JWT_EXPIRES_IN,
+      });
+    };
+
+    const token = signToken(admin._id);
+
+    // Set cookie
+    res.cookie("accessToken", token, {
+      expires: new Date(
+        Date.now() + 24 * 60 * 60 * 1000 // 1 day
+      ),
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "none",
+    });
+
+    // Remove password from output
+    admin.password = undefined;
+
+    res.status(200).json({
+      status: "success",
+      token,
+      data: {
+        admin,
+      },
     });
   } catch (err) {
     res.status(500).json({

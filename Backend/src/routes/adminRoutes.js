@@ -3,6 +3,9 @@ const router = express.Router();
 const adminController = require("../controllers/adminController");
 const { protect, restrictTo } = require("../middlewares/authMiddleware");
 
+// Admin login (Public)
+router.post("/admin/login", adminController.adminLogin);
+
 //Get admin dashboard overview
 router.get(
   "/admin/dashboard",
