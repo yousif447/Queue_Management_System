@@ -436,20 +436,19 @@ exports.createAdmin = async (req, res) => {
     }
 
     // Check if email already exists in User schema (to prevent conflicts)
+    // If found, we delete it to ensure strict separation (user request)
     const existingUser = await Users.findOne({ email });
     if (existingUser) {
-      return res.status(400).json({
-        status: "fail",
-        message: "Email already exists (User)",
-      });
+      console.log(`Found existing user with email ${email}. Deleting to allow fresh Admin creation.`);
+      await Users.deleteOne({ email });
     }
 
-    // Check Business schema too
+    // Check if email already exists in Business schema
     const existingBusiness = await Business.findOne({ email });
     if (existingBusiness) {
       return res.status(400).json({
         status: "fail",
-        message: "Email already exists (Business)",
+        message: "Email already exists in Businesses. Use a different email.",
       });
     }
 
@@ -483,6 +482,7 @@ exports.createAdmin = async (req, res) => {
 // POST /api/v1/admin/admin/login
 // -------------------------
 exports.adminLogin = async (req, res) => {
+  console.log(`[adminController.adminLogin] Hit! email=${req.body.email}`);
   try {
     const { email, password } = req.body;
 
@@ -961,15 +961,11 @@ exports.getQueueMonitoring = async (req, res) => {
       };
     }));
 
-    res.status(200).json({
-      status: "success",
-      queues: queueData,
-    });
+    res.status(200).json({ status: "success", queues: queueData });
   } catch (err) {
     res.status(500).json({ status: "error", message: err.message });
   }
 };
-
 // -------------------------
 // POST /api/v1/admin/bulk-action
 // -------------------------
@@ -982,7 +978,6 @@ exports.bulkAction = async (req, res) => {
     }
     
     let result = { affected: 0 };
-    
     switch (type) {
       case "users":
         if (action === "delete") {
