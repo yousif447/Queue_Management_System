@@ -76,8 +76,6 @@ export const SocketProvider = ({ children }) => {
   const fetchNotifications = async () => {
     if (!connected) {
         console.log('⏳ [SocketContext] fetchNotifications skipped (not connected yet)');
-        // But we should fetch anyway if we are on a page that needs them?
-        // Actually fetchNotifications is REST, not socket.
     }
     try {
       console.log('📥 [SocketContext] Fetching initial notifications...');
@@ -106,7 +104,73 @@ export const SocketProvider = ({ children }) => {
         console.warn("⚠️ [SocketContext] Sync failed:", e.message); 
     }
   };
-// ... (omitting middle parts for conciseness in replacement chunk but keeping structure)
+
+  const clearNotifications = async () => {
+    setNotifications([]);
+    try {
+        await authFetch(`${API_URL}/api/v1/notifications/read-all`, {
+           method: 'PATCH'
+        });
+    } catch(e) { console.error("❌ Failed to clear notifications:", e); }
+  };
+
+  const showNotification = (title, message, type = 'info') => {
+    toast.custom((t) => (
+      <div
+        className={`${
+          t.visible ? 'opacity-100 translate-y-0 scale-100' : 'opacity-0 translate-y-4 scale-95'
+        } transform transition-all duration-300 max-w-sm w-full bg-white dark:bg-gray-800 shadow-2xl rounded-xl pointer-events-auto flex ring-1 ring-black ring-opacity-5 dark:ring-white/10 overflow-hidden border-l-4 ${
+             type === 'turn' ? 'border-red-500' :
+             type === 'success' ? 'border-emerald-500' :
+             type === 'queue' ? 'border-amber-500' :
+             type === 'ticket' ? 'border-emerald-500' :
+             'border-blue-500'
+        }`}
+      >
+        <div className="flex-1 w-0 p-4">
+          <div className="flex items-start">
+            <div className="flex-shrink-0 pt-0.5 text-2xl">
+              {type === 'turn' ? '🔔' : 
+               type === 'success' ? '✅' :
+               type === 'queue' ? '⚠️' : 
+               type === 'ticket' ? '🎟️' : 'ℹ️'}
+            </div>
+            <div className="ml-3 flex-1">
+              <p className="text-sm font-bold text-gray-900 dark:text-white">
+                {title}
+              </p>
+              <p className="mt-1 text-sm text-gray-500 dark:text-gray-400 leading-snug">
+                {message}
+              </p>
+            </div>
+          </div>
+        </div>
+        <div className="flex border-l border-gray-200 dark:border-gray-700">
+          <button
+            onClick={() => toast.dismiss(t.id)}
+            className="w-full border border-transparent rounded-none rounded-r-lg p-4 flex items-center justify-center text-sm font-medium text-gray-400 hover:text-gray-500 focus:outline-none focus:bg-gray-50 dark:focus:bg-gray-700"
+          >
+            ✕
+          </button>
+        </div>
+      </div>
+    ), { duration: 4000, id: title + message });
+  };
+
+  const markAsRead = async (id) => {
+      setNotifications(prev => prev.map(n => n.id === id ? { ...n, isRead: true } : n));
+      try {
+          if(typeof id === 'string' && id.length === 24) {
+             await authFetch(`${API_URL}/api/v1/notifications/${id}/read`, { 
+                 method: 'PATCH'
+             });
+          }
+      } catch(e) { console.error("❌ Failed to mark as read:", e); }
+  };
+
+  useEffect(() => {
+     fetchNotifications();
+  }, []);
   useEffect(() => {
     if (!socket || isInitialized.current) return;
     
