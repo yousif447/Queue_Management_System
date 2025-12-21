@@ -65,9 +65,7 @@ const createTransporter = () => {
     socketTimeout: 20000,
     // Fix for self-signed certificate errors
     tls: {
-      rejectUnauthorized: false,
-      // Some networks require this for STARTTLS
-      ciphers: 'SSLv3'
+      rejectUnauthorized: false
     }
   };
 
