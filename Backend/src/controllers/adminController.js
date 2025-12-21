@@ -1,5 +1,6 @@
 const Users = require("../models/userSchema");
 const Business = require("../models/businessSchema");
+const Admin = require("../models/adminSchema");
 
 // Optional models - may not exist in all setups
 let Ticket = null;
@@ -14,7 +15,10 @@ exports.dashboard = async (req, res) => {
   try {
     // Basic counts
     const userCount = await Users.countDocuments({ role: "user" });
-    const adminCount = await Users.countDocuments({ role: "admin" });
+
+    const adminSchemaCount = await Admin.countDocuments();
+    const userSchemaAdminCount = await Users.countDocuments({ role: "admin" });
+    const adminCount = adminSchemaCount + userSchemaAdminCount;
     const businessUserCount = await Users.countDocuments({ role: "owner" });
     const businessCount = await Business.countDocuments();
     const activeBusinessCount = await Business.countDocuments({ status: "active" });
@@ -152,11 +156,15 @@ exports.dashboard = async (req, res) => {
 exports.getAllUsers = async (req, res) => {
   try {
     const users = await Users.find();
+    const admins = await Admin.find(); // Get admins from Admin schema
+    
+    // Combine users and admins
+    const allUsers = [...users, ...admins];
 
     res.status(200).json({
       status: "success",
-      results: users.length,
-      users,
+      results: allUsers.length,
+      users: allUsers,
     });
   } catch (err) {
     res.status(500).json({
@@ -193,11 +201,16 @@ exports.getUserById = async (req, res) => {
   try {
     const { id } = req.params;
 
-    const user = await Users.findById(id);
+    let user = await Users.findById(id);
+    if (!user) {
+      // Try finding in Admin schema
+      user = await Admin.findById(id);
+    }
+    
     if (!user) {
       return res.status(404).json({
         status: "fail",
-        message: "User not found",
+        message: "User/Admin not found",
       });
     }
 
@@ -220,14 +233,25 @@ exports.updateUserById = async (req, res) => {
   try {
     const { id } = req.params;
 
-    const updatedUser = await Users.findByIdAndUpdate(id, req.body, {
+    let updatedUser = await Users.findByIdAndUpdate(id, req.body, {
       new: true,
+      runValidators: true
     });
+
+    if (!updatedUser) {
+      // Try updating in Admin schema
+      // Note: Admin schema might not have all fields that User schema has (e.g. phone)
+      // Filter body to only include valid Admin fields if necessary, but Mongoose ignores unknown fields by default
+      updatedUser = await Admin.findByIdAndUpdate(id, req.body, {
+        new: true,
+        runValidators: true
+      });
+    }
 
     if (!updatedUser) {
       return res.status(404).json({
         status: "fail",
-        message: "User not found",
+        message: "User/Admin not found",
       });
     }
 
@@ -251,12 +275,17 @@ exports.deleteUserById = async (req, res) => {
   try {
     const { id } = req.params;
 
-    const deletedUser = await Users.findByIdAndDelete(id);
+    let deletedUser = await Users.findByIdAndDelete(id);
+
+    if (!deletedUser) {
+      // Try deleting from Admin schema
+      deletedUser = await Admin.findByIdAndDelete(id);
+    }
 
     if (!deletedUser) {
       return res.status(404).json({
         status: "fail",
-        message: "User not found",
+        message: "User/Admin not found",
       });
     }
 
@@ -386,25 +415,40 @@ exports.createAdmin = async (req, res) => {
   try {
     const { name, email, password, phone } = req.body;
 
-    // Check if email already exists
+    // Check if email already exists in Admin schema
+    const existingAdmin = await Admin.findOne({ email });
+    if (existingAdmin) {
+      return res.status(400).json({
+        status: "fail",
+        message: "Email already exists (Admin)",
+      });
+    }
+
+    // Check if email already exists in User schema (to prevent conflicts)
     const existingUser = await Users.findOne({ email });
     if (existingUser) {
       return res.status(400).json({
         status: "fail",
-        message: "Email already exists",
+        message: "Email already exists (User)",
       });
     }
 
-    // Create new admin user
-    const bcrypt = require("bcryptjs");
-    const hashedPassword = await bcrypt.hash(password, 12);
+    // Check Business schema too
+    const existingBusiness = await Business.findOne({ email });
+    if (existingBusiness) {
+      return res.status(400).json({
+        status: "fail",
+        message: "Email already exists (Business)",
+      });
+    }
 
-    const newAdmin = await Users.create({
+    // Create new admin in Admin schema
+    const newAdmin = await Admin.create({
       name,
       email,
-      password: hashedPassword,
-      phone,
+      password, // Pre-save hook will hash this
       role: "admin",
+      // Phone is not in Admin schema, so we skip it
     });
 
     // Remove password from response
@@ -432,6 +476,16 @@ exports.getSystemStats = async (req, res) => {
     const usersByRole = await Users.aggregate([
       { $group: { _id: "$role", count: { $sum: 1 } } }
     ]);
+    
+    // Add admin schema count to admin role or as separate entry?
+    // Let's add it to the existing "admin" role count if it exists, or push new
+    const adminCount = await Admin.countDocuments();
+    const adminRoleIndex = usersByRole.findIndex(r => r._id === "admin");
+    if (adminRoleIndex !== -1) {
+      usersByRole[adminRoleIndex].count += adminCount;
+    } else if (adminCount > 0) {
+      usersByRole.push({ _id: "admin", count: adminCount });
+    }
 
     // Get banned users count
     const bannedUsers = await Users.countDocuments({ isBanned: true });

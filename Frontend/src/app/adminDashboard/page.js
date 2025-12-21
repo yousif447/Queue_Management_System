@@ -1056,6 +1056,15 @@ export default function Page() {
                           </span>
                         </div>
                       </div>
+                      
+                      <div className="flex gap-2.5 p-5 pt-0 border-t border-gray-100 dark:border-gray-800/50 mt-4">
+                        <button disabled={submitting} onClick={() => { setEditingUser(a); setEditForm({ name: a.name, email: a.email }); }} className="flex-1 py-2.5 rounded-xl bg-gradient-to-r from-indigo-500/10 to-purple-500/10 text-indigo-600 dark:text-indigo-400 text-xs font-semibold hover:from-indigo-500/20 hover:to-purple-500/20 transition-all flex items-center justify-center gap-2 border border-indigo-200/50 dark:border-indigo-800/30 disabled:opacity-50 disabled:cursor-not-allowed">
+                          <FaEdit /> {t('adminDashboard.common.edit')}
+                        </button>
+                        <button disabled={submitting} onClick={() => setDeleteConfirm({ t: "user", id: a._id, n: a.name })} className="w-12 py-2.5 rounded-xl bg-gradient-to-r from-red-500/10 to-rose-500/10 text-red-500 text-xs font-semibold hover:from-red-500/20 hover:to-rose-500/20 transition-all flex items-center justify-center border border-red-200/50 dark:border-red-800/30 disabled:opacity-50 disabled:cursor-not-allowed">
+                          <FaTrash />
+                        </button>
+                      </div>
                     </div>
                   ))}
                 </div>
