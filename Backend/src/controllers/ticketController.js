@@ -771,9 +771,9 @@ exports.reactivateTicket = async (req, res) => {
     const ticket = await Ticket.findById(req.params.id);
     if (!ticket) return res.status(404).json({ message: "Ticket not found" });
 
-    if (ticket.status !== "missed") {
+    if (ticket.status !== "missed" && ticket.status !== "cancelled") {
       return res.status(400).json({
-        message: "Only missed/no-show tickets can be reactivated",
+        message: "Only missed/no-show or cancelled tickets can be reactivated",
       });
     }
 

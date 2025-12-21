@@ -58,6 +58,7 @@ export default function DashboardTab({ businessData }) {
   const [queue, setQueue] = useState(null);
   const [queueLoading, setQueueLoading] = useState(false);
   const [calling, setCalling] = useState(false);
+  const [statusFilter, setStatusFilter] = useState('all');
   const [showQueueMenu, setShowQueueMenu] = useState(false);
   const [showWalkInModal, setShowWalkInModal] = useState(false);
   const [walkInData, setWalkInData] = useState({ name: '', phone: '', email: '', price: 0 });
@@ -93,7 +94,8 @@ export default function DashboardTab({ businessData }) {
           const isToday = ticketDate.toDateString() === todayStr;
           const isCurrentQueue = ticket.queueId === queue?._id || ticket.queueId?._id === queue?._id;
           const isPendingPayment = ticket.status === 'pending_payment';
-          return isToday && isCurrentQueue && !isPendingPayment;
+          const isCompleted = ticket.status === 'ended' || ticket.status === 'done' || ticket.status === 'completed';
+          return isToday && isCurrentQueue && !isPendingPayment && !isCompleted;
         });
         setTickets(todaysTickets);
       }
@@ -457,6 +459,7 @@ export default function DashboardTab({ businessData }) {
   const calledTickets = tickets.filter((t) => t.status === "called");
   const servingTickets = tickets.filter((t) => t.status === "in-progress");
   const missedTickets = tickets.filter((t) => t.status === "missed" || t.status === "no-show");
+  const cancelledTickets = tickets.filter((t) => t.status === "cancelled");
   const nextTicket = waitingTickets[0];
 
   if (loading && !businessData) {
@@ -659,13 +662,46 @@ export default function DashboardTab({ businessData }) {
         <div>
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-bold text-gray-900 dark:text-white">{t('businessDashboard.dashboard.activeTickets')}</h3>
-            <div className="flex gap-2 text-sm">
-              <span className="px-3 py-1.5 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 rounded-lg font-semibold border border-green-200 dark:border-green-700">⚡ {servingTickets.length} {t('businessDashboard.dashboard.serving')}</span>
-              <span className="px-3 py-1.5 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 rounded-lg font-semibold border border-blue-200 dark:border-blue-700">📢 {calledTickets.length} {t('businessDashboard.dashboard.called')}</span>
-              <span className="px-3 py-1.5 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400 rounded-lg font-semibold border border-purple-200 dark:border-purple-700">⏰ {waitingTickets.length} {t('businessDashboard.dashboard.waiting')}</span>
-              {missedTickets.length > 0 && (
-                <span className="px-3 py-1.5 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 rounded-lg font-semibold border border-red-200 dark:border-red-700">🚫 {missedTickets.length} {t('businessDashboard.queueManagement.missedTickets')}</span>
-              )}
+            <div className="flex flex-wrap gap-2 text-sm">
+              <button 
+                onClick={() => setStatusFilter('all')}
+                className={`px-3 py-1.5 rounded-lg font-semibold border transition-all ${statusFilter === 'all' ? 'bg-gray-800 text-white border-gray-900 shadow-md transform scale-105 dark:bg-gray-200 dark:text-gray-900' : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-400 border-gray-200 dark:border-gray-700 hover:bg-gray-200 dark:hover:bg-gray-700'}`}
+              >
+                📋 {tickets.length} {t('businessDashboard.dashboard.allTickets') || "All Tickets"}
+              </button>
+              <button 
+                onClick={() => setStatusFilter(statusFilter === 'in-progress' ? 'all' : 'in-progress')}
+                className={`px-3 py-1.5 rounded-lg font-semibold border transition-all ${statusFilter === 'in-progress' ? 'bg-green-600 text-white border-green-700 shadow-md transform scale-105' : 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 border-green-200 dark:border-green-700 hover:bg-green-200 dark:hover:bg-green-900/50'}`}
+              >
+                ⚡ {servingTickets.length} {t('businessDashboard.dashboard.serving')}
+              </button>
+              
+              <button 
+                onClick={() => setStatusFilter(statusFilter === 'called' ? 'all' : 'called')}
+                className={`px-3 py-1.5 rounded-lg font-semibold border transition-all ${statusFilter === 'called' ? 'bg-blue-600 text-white border-blue-700 shadow-md transform scale-105' : 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 border-blue-200 dark:border-blue-700 hover:bg-blue-200 dark:hover:bg-blue-900/50'}`}
+              >
+                📢 {calledTickets.length} {t('businessDashboard.dashboard.called')}
+              </button>
+              
+              <button 
+                onClick={() => setStatusFilter(statusFilter === 'waiting' ? 'all' : 'waiting')}
+                className={`px-3 py-1.5 rounded-lg font-semibold border transition-all ${statusFilter === 'waiting' ? 'bg-purple-600 text-white border-purple-700 shadow-md transform scale-105' : 'bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400 border-purple-200 dark:border-purple-700 hover:bg-purple-200 dark:hover:bg-purple-900/50'}`}
+              >
+                ⏰ {waitingTickets.length} {t('businessDashboard.dashboard.waiting')}
+              </button>
+              
+              <button 
+                onClick={() => setStatusFilter(statusFilter === 'missed' ? 'all' : 'missed')}
+                className={`px-3 py-1.5 rounded-lg font-semibold border transition-all ${statusFilter === 'missed' ? 'bg-red-600 text-white border-red-700 shadow-md transform scale-105' : 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 border-red-200 dark:border-red-700 hover:bg-red-200 dark:hover:bg-red-900/50'}`}
+              >
+                🚫 {missedTickets.length} {t('businessDashboard.queueManagement.missedTickets')}
+              </button>
+              <button 
+                onClick={() => setStatusFilter(statusFilter === 'cancelled' ? 'all' : 'cancelled')}
+                className={`px-3 py-1.5 rounded-lg font-semibold border transition-all ${statusFilter === 'cancelled' ? 'bg-gray-600 text-white border-gray-700 shadow-md transform scale-105' : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-400 border-gray-200 dark:border-gray-700 hover:bg-gray-200 dark:hover:bg-gray-700'}`}
+              >
+                ❌ {cancelledTickets.length} {t('userDashboard.ticketStatus.cancelled')}
+              </button>
             </div>
           </div>
 
@@ -681,7 +717,7 @@ export default function DashboardTab({ businessData }) {
             ) : (
               <>
                 {/* Called Tickets */}
-                {calledTickets.map((ticket) => (
+                {(statusFilter === 'all' || statusFilter === 'called') && calledTickets.map((ticket) => (
                   <div key={ticket._id} className="relative bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/30 dark:to-blue-800/30 rounded-2xl p-6 shadow-lg hover:shadow-2xl border-2 border-blue-400 dark:border-blue-500 transition-all duration-300 transform hover:-translate-y-1">
                     <div className="absolute -top-3 -right-3 px-4 py-1 bg-gradient-to-r from-blue-500 to-blue-600 rounded-full text-white text-xs font-bold shadow-lg animate-pulse">{t('businessDashboard.queueManagement.calledBadge')}</div>
                     {/* Mobile Layout */}
@@ -741,7 +777,7 @@ export default function DashboardTab({ businessData }) {
                 ))}
 
                 {/* Serving Tickets */}
-                {servingTickets.map((ticket) => (
+                {(statusFilter === 'all' || statusFilter === 'in-progress') && servingTickets.map((ticket) => (
                   <div key={ticket._id} className="relative bg-gradient-to-br from-green-50 to-emerald-100 dark:from-green-900/30 dark:to-emerald-800/30 rounded-2xl p-6 shadow-lg hover:shadow-2xl border-2 border-green-500 dark:border-green-500 transition-all duration-300">
                     <div className="absolute -top-3 -right-3 px-4 py-1 bg-gradient-to-r from-green-500 to-emerald-600 rounded-full text-white text-xs font-bold shadow-lg animate-pulse">{t('businessDashboard.queueManagement.servingNowBadge')}</div>
                     {/* Mobile Layout */}
@@ -782,7 +818,7 @@ export default function DashboardTab({ businessData }) {
                 ))}
 
                 {/* Waiting Tickets */}
-                {waitingTickets.map((ticket, index) => (
+                {(statusFilter === 'all' || statusFilter === 'waiting') && waitingTickets.map((ticket, index) => (
                   <div key={ticket._id} className="relative bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-900 rounded-2xl p-6 shadow-lg hover:shadow-2xl border-2 border-gray-200 dark:border-gray-700 hover:border-emerald-500 dark:hover:border-emerald-400 transition-all duration-300 transform hover:-translate-y-1">
                     <div className="absolute -top-3 -left-3 w-12 h-12 bg-gradient-to-br from-emerald-500 to-teal-600 dark:from-emerald-500 dark:to-teal-600 rounded-xl flex items-center justify-center text-white font-bold text-lg shadow-lg">{index + 1}</div>
                     {/* Mobile Layout */}
@@ -830,18 +866,18 @@ export default function DashboardTab({ businessData }) {
                         </div>
                       </div>
                       <div className="text-right">
-                        {ticket.price > 0 && (<><p className="text-3xl font-bold text-emerald-600 dark:text-emerald-400 mb-2">${ticket.price}</p><span className={`text-xs px-4 py-2 rounded-full font-semibold ${ticket.paymentStatus === 'paid' ? 'bg-green-500 text-white' : 'bg-yellow-400 text-gray-900'}`}>{ticket.paymentStatus === 'paid' ? '✓ Paid' : 'Unpaid'}</span></>)}
+                        {ticket.price > 0 && (<><p className="text-3xl font-bold text-emerald-600 dark:text-emerald-400 mb-2">${ticket.price}</p><span className={`text-xs px-4 py-2 rounded-full font-semibold ${ticket.paymentStatus === 'paid' ? 'bg-green-500 text-white' : 'bg-yellow-400 text-gray-900'}`}>{ticket.paymentStatus === 'paid' ? `✓ ${t('businessDashboard.queueManagement.paid')}` : t('businessDashboard.queueManagement.unpaid')}</span></>)}
                       </div>
                       <div className="flex gap-2">
-                        {ticket.paymentStatus !== 'paid' && ticket.price > 0 && (<button onClick={() => handleMarkPaid(ticket._id)} className="px-4 py-2 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-xl font-semibold transition-all shadow-md flex items-center gap-2" title="Mark as Paid">💵 Pay</button>)}
-                        <button onClick={() => handleCallTicket(ticket._id)} className="px-4 py-2 bg-gradient-to-r from-emerald-500 to-teal-600 text-white rounded-xl font-semibold transition-all shadow-md flex items-center gap-2" title="Call">📢 Call</button>
+                        {ticket.paymentStatus !== 'paid' && ticket.price > 0 && (<button onClick={() => handleMarkPaid(ticket._id)} className="px-4 py-2 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-xl font-semibold transition-all shadow-md flex items-center gap-2" title={t('businessDashboard.queueManagement.pay')}>💵 {t('businessDashboard.queueManagement.pay')}</button>)}
+                        <button onClick={() => handleCallTicket(ticket._id)} className="px-4 py-2 bg-gradient-to-r from-emerald-500 to-teal-600 text-white rounded-xl font-semibold transition-all shadow-md flex items-center gap-2" title={t('businessDashboard.queueManagement.call')}>📢 {t('businessDashboard.queueManagement.call')}</button>
                       </div>
                     </div>
                   </div>
                 ))}
         
                 {/* Missed Tickets */}
-                {missedTickets.map((ticket, index) => (
+                {(statusFilter === 'all' || statusFilter === 'missed') && missedTickets.map((ticket, index) => (
                   <div key={ticket._id} className="relative bg-gradient-to-br from-red-50 to-red-100 dark:from-red-900/20 dark:to-red-800/20 rounded-2xl p-6 shadow-lg border-2 border-red-200 dark:border-red-700/50 hover:border-red-400 dark:hover:border-red-600 transition-all duration-300">
                      <div className="absolute -top-3 -right-3 px-4 py-1 bg-red-500 rounded-full text-white text-xs font-bold shadow-lg">{t('businessDashboard.queueManagement.noShow')}</div>
                     
@@ -884,6 +920,64 @@ export default function DashboardTab({ businessData }) {
                         <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">{ticket.userId?.phone || ticket.guestPhone || ''}</p>
                         <div className="flex items-center gap-2 bg-red-50 dark:bg-red-900/20 px-3 py-1 rounded-lg border border-red-200 dark:border-red-800 w-fit">
                            <span className="text-xs text-red-600 dark:text-red-400 font-semibold">{t('businessDashboard.queueManagement.noShow')}</span>
+                        </div>
+                      </div>
+                      <div className="flex justify-end">
+                        <button 
+                          onClick={() => handleReactivateTicket(ticket._id)}
+                          className="px-6 py-3 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-xl font-semibold hover:from-blue-600 hover:to-blue-700 transition-all shadow-md flex items-center gap-2"
+                        >
+                          ↻ {t('businessDashboard.queueManagement.reactivate')}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+
+                {/* Cancelled Tickets */}
+                {(statusFilter === 'all' || statusFilter === 'cancelled') && cancelledTickets.map((ticket, index) => (
+                  <div key={ticket._id} className="relative bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-900 rounded-2xl p-6 shadow-lg border-2 border-gray-200 dark:border-gray-700 hover:border-gray-400 dark:hover:border-gray-600 transition-all duration-300">
+                     <div className="absolute -top-3 -right-3 px-4 py-1 bg-gray-500 rounded-full text-white text-xs font-bold shadow-lg">{t('userDashboard.ticketStatus.cancelled')}</div>
+                    
+                    {/* Mobile Layout */}
+                    <div className="md:hidden space-y-4">
+                      <div className="flex items-start justify-between pl-2">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-2">
+                            {ticket.userId?.profileImage ? (
+                              <img src={getImageUrl(ticket.userId.profileImage)} alt={ticket.userId.name} className="w-10 h-10 rounded-full object-cover border-2 border-gray-500 shadow-md" />
+                            ) : (
+                              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-gray-500 to-gray-600 flex items-center justify-center shadow-md"><FaUser className="text-white text-sm" /></div>
+                            )}
+                            <div className="w-10 h-10 rounded-lg bg-gray-500 text-white flex items-center justify-center font-bold shadow-md">#{ticket.ticketNumber}</div>
+                            <div>
+                              <h4 className="font-bold text-lg text-gray-900 dark:text-white">{ticket.userId?.name || ticket.guestName || t('businessDashboard.queueManagement.guest')}</h4>
+                              <p className="text-sm text-gray-600 dark:text-gray-400">{ticket.userId?.phone || ticket.guestPhone || ''}</p>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                      <button 
+                        onClick={() => handleReactivateTicket(ticket._id)}
+                        className="w-full py-3 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-xl font-semibold hover:from-blue-600 hover:to-blue-700 transition-all shadow-md flex items-center justify-center gap-2"
+                      >
+                        ↻ {t('businessDashboard.queueManagement.reactivate')}
+                      </button>
+                    </div>
+
+                    {/* Desktop Layout */}
+                    <div className="hidden md:grid md:grid-cols-[auto_auto_1fr_auto] gap-6 items-center">
+                       {ticket.userId?.profileImage ? (
+                        <img src={getImageUrl(ticket.userId.profileImage)} alt={ticket.userId.name} className="w-16 h-16 rounded-full object-cover border-2 border-gray-500 shadow-lg" />
+                      ) : (
+                        <div className="w-16 h-16 rounded-full bg-gradient-to-br from-gray-500 to-gray-600 flex items-center justify-center shadow-lg"><FaUser className="text-white text-2xl" /></div>
+                      )}
+                      <div className="w-16 h-16 rounded-xl bg-gradient-to-br from-gray-500 to-gray-600 text-white flex items-center justify-center font-bold text-xl shadow-lg">#{ticket.ticketNumber}</div>
+                      <div>
+                        <h4 className="font-bold text-xl text-gray-900 dark:text-white mb-1">{ticket.userId?.name || ticket.guestName || t('businessDashboard.queueManagement.guest')}</h4>
+                        <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">{ticket.userId?.phone || ticket.guestPhone || ''}</p>
+                        <div className="flex items-center gap-2 bg-gray-50 dark:bg-gray-900/20 px-3 py-1 rounded-lg border border-gray-200 dark:border-gray-800 w-fit">
+                           <span className="text-xs text-gray-600 dark:text-gray-400 font-semibold">{t('userDashboard.ticketStatus.cancelled')}</span>
                         </div>
                       </div>
                       <div className="flex justify-end">

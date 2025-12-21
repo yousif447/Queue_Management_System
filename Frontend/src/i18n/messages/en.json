@@ -290,7 +290,11 @@
       "waiting": "Waiting",
       "called": "Called",
       "served": "Served",
-      "cancelled": "Cancelled"
+      "cancelled": "Cancelled",
+      "completed": "Completed",
+      "ended": "Ended",
+      "done": "Done",
+      "no-show": "No Show"
     },
     "tabs": {
       "dashboard": "Dashboard",
@@ -1347,6 +1351,7 @@
     },
     "dashboard": {
       "title": "Business Dashboard",
+      "allTickets": "All Tickets",
       "open": "Open",
       "paused": "Paused",
       "closed": "Closed",

@@ -477,9 +477,13 @@ exports.confirmSession = async (req, res) => {
     if (session.status === 'complete' && session.subscription) {
       const subscription = await stripe.subscriptions.retrieve(session.subscription);
       
-      console.log('Stripe subscription retrieved:', {
+      console.log('Stripe subscription retrieved (Full):', JSON.stringify(subscription, null, 2));
+      
+      console.log('Stripe subscription retrieved (Dates):', {
         current_period_start: subscription.current_period_start,
-        current_period_end: subscription.current_period_end
+        current_period_end: subscription.current_period_end,
+        id: subscription.id,
+        status: subscription.status
       });
       
       // Use fallback dates if Stripe doesn't provide them (test mode)

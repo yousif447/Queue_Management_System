@@ -159,7 +159,7 @@ export default function MyTicketsTab({ t, myTickets, loadingTickets, setMyTicket
                     ticket.status === 'called' ? 'bg-blue-100 dark:bg-blue-500/20 text-blue-700 dark:text-blue-400 border border-blue-200 dark:border-blue-500/50 animate-pulse' :
                     ticket.status === 'cancelled' ? 'bg-red-100 dark:bg-red-500/20 text-red-700 dark:text-red-400 border border-red-200 dark:border-red-500/50' :
                     'bg-purple-100 dark:bg-purple-500/20 text-purple-700 dark:text-purple-400 border border-purple-200 dark:border-purple-500/50'
-                  }`}>{ticket.status}</span>
+                  }`}>{t(`userDashboard.ticketStatus.${ticket.status}`) || ticket.status}</span>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4 mb-6 relative z-10">

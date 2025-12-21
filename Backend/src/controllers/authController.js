@@ -496,7 +496,7 @@ exports.refreshToken = async (req, res) => {
 // ----------------- Logout -----------------
 exports.logout = async (req, res) => {
   try {
-    const refreshTokenRaw = req.cookies?.refreshToken || req.body.refreshToken;
+    const refreshTokenRaw = req.cookies?.refreshToken || req.body?.refreshToken;
 
     if (refreshTokenRaw) {
       const hashed = hashToken(refreshTokenRaw);

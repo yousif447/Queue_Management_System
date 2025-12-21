@@ -289,7 +289,11 @@
       "waiting": "في الانتظار",
       "called": "تم الاتصال",
       "served": "تم الخدمة",
-      "cancelled": "ملغى"
+      "cancelled": "ملغى",
+      "completed": "مكتمل",
+      "ended": "منتهي",
+      "done": "تم",
+      "no-show": "لم يحضر"
     },
     "tabs": {
       "dashboard": "لوحة التحكم",
@@ -1337,6 +1341,7 @@
     },
     "dashboard": {
       "title": "لوحة تحكم الأعمال",
+      "allTickets": "كل التذاكر",
       "open": "مفتوح",
       "paused": "متوقف مؤقتاً",
       "closed": "مغلق",
