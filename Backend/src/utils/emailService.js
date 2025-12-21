@@ -6,14 +6,38 @@ const nodemailer = require("nodemailer");
  * Handles formats like: "Name" <email@example.com> or just email@example.com
  */
 const parseEmailFrom = () => {
-  const emailFrom = process.env.EMAIL_FROM;
+  let emailFrom = process.env.EMAIL_FROM;
+  const emailUser = process.env.EMAIL_USER;
+
   if (!emailFrom) {
-    return `"Queue Management System" <${process.env.EMAIL_USER}>`;
+    return `"Queue Management System" <${emailUser}>`;
   }
-  
-  // If it's already in the correct format or just an email, return as-is
-  // Remove any extra quotes that might cause issues
-  return emailFrom.replace(/^["']|["']$/g, '');
+
+  // Remove any extra quotes that might come from Render environment variables
+  emailFrom = emailFrom.replace(/^["']|["']$/g, '').trim();
+
+  // If it's already in the correct format like "Name" <email@ex.com>
+  if (emailFrom.includes('<') && emailFrom.includes('>')) {
+    return emailFrom;
+  }
+
+  // If it's just an email address
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (emailRegex.test(emailFrom)) {
+    return emailFrom;
+  }
+
+  // If it's a name with an email but no brackets (e.g. "Name email@ex.com")
+  const emailMatch = emailFrom.match(/[^\s@]+@[^\s@]+\.[^\s@]+/);
+  if (emailMatch) {
+    const email = emailMatch[0];
+    const name = emailFrom.replace(email, '').trim();
+    if (name) return `"${name}" <${email}>`;
+    return email;
+  }
+
+  // Otherwise treat it as a name and append the user's email
+  return `"${emailFrom}" <${emailUser}>`;
 };
 
 /**
@@ -27,31 +51,33 @@ const createTransporter = () => {
 
   console.log("📧 Configuring Email Transporter...");
   
+  const isGmail = mailHost && mailHost.includes('gmail.com');
+  
   let config = {
+    host: mailHost,
+    port: mailPort,
+    secure: mailPort === 465, // true for 465, false for other ports
     auth: {
       user: process.env.EMAIL_USER,
       pass: mailPass,
     },
-    // Add timeout and connection options for better error handling in serverless
-    connectionTimeout: 15000, // 15 seconds
-    greetingTimeout: 15000,
-    socketTimeout: 15000,
+    // Add timeout and connection options for better error handling in serverless/cloud
+    connectionTimeout: 20000, // 20 seconds
+    greetingTimeout: 20000,
+    socketTimeout: 20000,
     // Fix for self-signed certificate errors
     tls: {
-      rejectUnauthorized: false
+      rejectUnauthorized: false,
+      // Some networks require this for STARTTLS
+      ciphers: 'SSLv3'
     }
   };
 
-  // Optimization for common email services
-  if (mailHost.includes('gmail.com')) {
-    config.service = 'gmail';
-    console.log("🔹 Using pre-configured Gmail service");
-  } else {
-    config.host = mailHost;
-    config.port = mailPort;
-    config.secure = mailPort === 465;
-    console.log(`🔹 Using custom host: ${mailHost}:${mailPort} (secure: ${config.secure})`);
-  }
+  // If it's Gmail and we're in production, sometimes 'service' is safer, 
+  // but explicit host/port is usually better for debugging.
+  // We'll stick to explicit host/port but log the detail.
+  console.log(`🔹 SMTP Host: ${mailHost}`);
+  console.log(`🔹 SMTP Port: ${mailPort} (Secure: ${config.secure})`);
 
   return nodemailer.createTransport(config);
 };
