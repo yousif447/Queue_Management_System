@@ -7,7 +7,7 @@ import { API_URL } from '@/lib/api';
 import { useEffect, useMemo, useState } from "react";
 import { FaBan, FaBars, FaBox, FaBuilding, FaBullhorn, FaChartBar, FaCheckCircle, FaCheckSquare, FaChevronLeft, FaChevronRight, FaCircle, FaClock, FaCreditCard, FaCrown, FaDollarSign, FaDownload, FaEdit, FaEye, FaPlus, FaSearch, FaSignOutAlt, FaSquare, FaStar, FaSync, FaTicketAlt, FaTimes, FaTimesCircle, FaTrash, FaUserSecret, FaUserShield, FaUsers } from "react-icons/fa";
 
-const API = `${API_URL}/api/v1/admin/admin`;
+const API = `${API_URL}/api/v1/admin`;
 
 export default function Page() {
   const { t } = useTranslations();
