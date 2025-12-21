@@ -5,7 +5,7 @@ const { protect, restrictTo } = require("../middlewares/authMiddleware");
 
 //Get admin dashboard overview
 router.get(
-  "/dashboard",
+  "/admin/dashboard",
   protect,
   restrictTo("admin"),
   adminController.dashboard,
@@ -13,7 +13,7 @@ router.get(
 
 //Get all users (admin panel)
 router.get(
-  "/users",
+  "/admin/users",
   protect,
   restrictTo("admin"),
   adminController.getAllUsers,
@@ -21,7 +21,7 @@ router.get(
 
 //Get all businesses (admin panel)
 router.get(
-  "/businesses",
+  "/admin/businesses",
   protect,
   restrictTo("admin"),
   adminController.getAllBusinesses,
@@ -29,7 +29,7 @@ router.get(
 
 //Get all tickets (admin panel)
 router.get(
-  "/tickets",
+  "/admin/tickets",
   protect,
   restrictTo("admin"),
   adminController.getAllTickets,
@@ -37,7 +37,7 @@ router.get(
 
 //Get user by ID (admin only)
 router.get(
-  "/users/:id",
+  "/admin/users/:id",
   protect,
   restrictTo("admin"),
   adminController.getUserById,
@@ -45,7 +45,7 @@ router.get(
 
 //Update user by ID (admin only)
 router.put(
-  "/users/:id",
+  "/admin/users/:id",
   protect,
   restrictTo("admin"),
   adminController.updateUserById,
@@ -53,7 +53,7 @@ router.put(
 
 //Delete user by ID (admin only)
 router.delete(
-  "/users/:id",
+  "/admin/users/:id",
   protect,
   restrictTo("admin"),
   adminController.deleteUserById,
@@ -61,7 +61,7 @@ router.delete(
 
 //Ban/Suspend user (admin only)
 router.patch(
-  "/users/:id/ban",
+  "/admin/users/:id/ban",
   protect,
   restrictTo("admin"),
   adminController.banUser,
@@ -69,7 +69,7 @@ router.patch(
 
 //Unban user (admin only)
 router.patch(
-  "/users/:id/unban",
+  "/admin/users/:id/unban",
   protect,
   restrictTo("admin"),
   adminController.unbanUser,
@@ -77,7 +77,7 @@ router.patch(
 
 //Create new admin (admin only)
 router.post(
-  "/create-admin",
+  "/admin/create-admin",
   protect,
   restrictTo("admin"),
   adminController.createAdmin,
@@ -85,7 +85,7 @@ router.post(
 
 //Get system statistics (admin only)
 router.get(
-  "/system-stats",
+  "/admin/system-stats",
   protect,
   restrictTo("admin"),
   adminController.getSystemStats,
@@ -93,7 +93,7 @@ router.get(
 
 //Get all reviews (admin only)
 router.get(
-  "/reviews",
+  "/admin/reviews",
   protect,
   restrictTo("admin"),
   adminController.getAllReviews,
@@ -101,7 +101,7 @@ router.get(
 
 //Delete review (admin only)
 router.delete(
-  "/reviews/:id",
+  "/admin/reviews/:id",
   protect,
   restrictTo("admin"),
   adminController.deleteReview,
@@ -109,7 +109,7 @@ router.delete(
 
 //Get categories with counts (admin only)
 router.get(
-  "/categories",
+  "/admin/categories",
   protect,
   restrictTo("admin"),
   adminController.getCategories,
@@ -117,7 +117,7 @@ router.get(
 
 //Get all payments (admin only)
 router.get(
-  "/payments",
+  "/admin/payments",
   protect,
   restrictTo("admin"),
   adminController.getAllPayments,
@@ -125,7 +125,7 @@ router.get(
 
 //Get all staff (admin only)
 router.get(
-  "/staff",
+  "/admin/staff",
   protect,
   restrictTo("admin"),
   adminController.getAllStaff,
@@ -133,7 +133,7 @@ router.get(
 
 //Get all subscriptions (admin only)
 router.get(
-  "/subscriptions",
+  "/admin/subscriptions",
   protect,
   restrictTo("admin"),
   adminController.getSubscriptions,
@@ -141,7 +141,7 @@ router.get(
 
 //Create announcement (admin only)
 router.post(
-  "/announcements",
+  "/admin/announcements",
   protect,
   restrictTo("admin"),
   adminController.createAnnouncement,
@@ -149,7 +149,7 @@ router.post(
 
 //Get audit logs (admin only)
 router.get(
-  "/audit-logs",
+  "/admin/audit-logs",
   protect,
   restrictTo("admin"),
   adminController.getAuditLogs,
@@ -157,7 +157,7 @@ router.get(
 
 //Export data as CSV (admin only)
 router.get(
-  "/export/:type",
+  "/admin/export/:type",
   protect,
   restrictTo("admin"),
   adminController.exportData,
@@ -165,7 +165,7 @@ router.get(
 
 //Queue monitoring (admin only)
 router.get(
-  "/queue-monitoring",
+  "/admin/queue-monitoring",
   protect,
   restrictTo("admin"),
   adminController.getQueueMonitoring,
@@ -173,7 +173,7 @@ router.get(
 
 //Bulk action (admin only)
 router.post(
-  "/bulk-action",
+  "/admin/bulk-action",
   protect,
   restrictTo("admin"),
   adminController.bulkAction,
@@ -181,7 +181,7 @@ router.post(
 
 //System health (admin only)
 router.get(
-  "/system-health",
+  "/admin/system-health",
   protect,
   restrictTo("admin"),
   adminController.getSystemHealth,
@@ -189,7 +189,7 @@ router.get(
 
 //Login history (admin only)
 router.get(
-  "/login-history",
+  "/admin/login-history",
   protect,
   restrictTo("admin"),
   adminController.getLoginHistory,
@@ -197,7 +197,7 @@ router.get(
 
 //Get settings (admin only)
 router.get(
-  "/settings",
+  "/admin/settings",
   protect,
   restrictTo("admin"),
   adminController.getSettings,
