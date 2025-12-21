@@ -118,7 +118,9 @@
     "free": "مجاني",
     "processing": "جاري المعالجة...",
     "plan": "الخطة",
-    "fullyBooked": "محجوز بالكامل"
+    "fullyBooked": "محجوز بالكامل",
+    "selectBusiness": "اختر شركة",
+    "searchBusiness": "بحث عن شركات"
   },
   "about": {
     "title": "عن QuickQueue",
@@ -469,6 +471,7 @@
       "adminRole": "مدير"
     },
     "common": {
+      "loading": "جاري التحميل...",
       "retry": "إعادة المحاولة",
       "refresh": "تحديث",
       "fillFields": "يرجى ملء جميع الحقول",
@@ -476,7 +479,11 @@
       "update": "تحديث",
       "cancel": "إلغاء",
       "create": "إنشاء",
-      "deleteConfirm": "هل أنت متأكد أنك تريد حذف {name}؟"
+      "edit": "تعديل",
+      "view": "عرض",
+      "deleteConfirm": "هل أنت متأكد أنك تريد حذف {name}؟",
+      "searchBusiness": "بحث عن شركات",
+      "selectBusiness": "اختر شركة"
     },
     "overview": {
       "totalUsers": "إجمالي المستخدمين",
@@ -486,7 +493,8 @@
       "todayUsers": "مستخدمين اليوم",
       "todayBiz": "أعمال اليوم",
       "todayTickets": "تذاكر اليوم",
-      "completed": "مكتمل"
+      "completed": "مكتمل",
+      "todayActivity": "نشاط اليوم"
     },
     "actions": {
       "announce": "إعلان",
@@ -510,7 +518,8 @@
         "status": "الحالة"
     },
     "businesses": {
-      "searchPlaceholder": "بحث عن الأعمال..."
+      "searchPlaceholder": "بحث عن الأعمال...",
+      "selectBusiness": "اختر شركة"
     },
     "tickets": {
       "filterAll": "كل الحالات",
@@ -635,7 +644,8 @@
       "trial": "تجريبي",
       "inactive": "غير نشط"
     }
-  },  "notFound": {
+  },
+  "notFound": {
     "title": "الصفحة غير موجودة",
     "description": "عذرًا! يبدو أن الصفحة التي تبحث عنها قد ضلت طريقها. دعنا نعيدك إلى المسار الصحيح.",
     "button": "العودة إلى الصفحة الرئيسية",
@@ -1630,5 +1640,27 @@
       "veryGood": "جيد جداً",
       "excellent": "ممتاز"
     }
+  },
+  "specializations": {
+    "Medical": "طبي",
+    "Healthcare": "الرعاية الصحية",
+    "Banking": "البنوك",
+    "Finance": "المالية",
+    "Telecom": "الاتصالات",
+    "Government": "الحكومة",
+    "Education": "التعليم",
+    "Restaurant": "مطعم",
+    "Retail": "البيع بالتجزئة",
+    "Technology": "التكنولوجيا",
+    "Automotive": "السيارات",
+    "Real Estate": "العقارات",
+    "Legal": "القانوني",
+    "Consulting": "الاستشارات",
+    "Entertainment": "الترفيه",
+    "Fitness": "اللياقة البدنية",
+    "Beauty": "التجميل",
+    "Travel": "السفر",
+    "Insurance": "التأمين",
+    "Logistics": "الخدمات اللوجستية"
   }
 }

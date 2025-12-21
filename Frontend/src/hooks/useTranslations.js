@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from 'react';
+// Force reload
 import enMessages from '../i18n/messages/en.json';
 
 export function useTranslations() {

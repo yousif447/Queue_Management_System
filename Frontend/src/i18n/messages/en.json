@@ -119,7 +119,9 @@
     "processing": "Processing...",
     "plan": "Plan",
     "fullyBooked": "Fully Booked",
-    "optional": "Optional"
+    "optional": "Optional",
+    "selectBusiness": "Select Business",
+    "searchBusiness": "Search businesses"
   },
   "about": {
     "title": "About QuickQueue",
@@ -470,6 +472,7 @@
       "adminRole": "Admin"
     },
     "common": {
+      "loading": "Loading...",
       "retry": "Retry",
       "refresh": "Refresh",
       "fillFields": "Please fill all fields",
@@ -477,7 +480,11 @@
       "update": "Update",
       "cancel": "Cancel",
       "create": "Create",
-      "deleteConfirm": "Are you sure you want to delete {name}?"
+      "edit": "Edit",
+      "view": "View",
+      "deleteConfirm": "Are you sure you want to delete {name}?",
+      "searchBusiness": "Search businesses",
+      "selectBusiness": "Select Business"
     },
     "overview": {
       "totalUsers": "Total Users",
@@ -485,9 +492,10 @@
       "totalTickets": "Total Tickets",
       "totalRevenue": "Total Revenue",
       "todayUsers": "Today Users",
-      "todayBiz": "Today Biz",
+      "todayBiz": "New Businesses",
       "todayTickets": "Today Tickets",
-      "completed": "Completed"
+      "completed": "Completed",
+      "todayActivity": "Today's Activity"
     },
     "actions": {
       "announce": "Announce",
@@ -511,7 +519,8 @@
       "status": "Status"
     },
     "businesses": {
-      "searchPlaceholder": "Search businesses..."
+      "searchPlaceholder": "Search businesses...",
+      "selectBusiness": "Select Business"
     },
     "tickets": {
       "filterAll": "All Status",
@@ -636,7 +645,8 @@
       "trial": "Trial",
       "inactive": "Inactive"
     }
-  },  "notFound": {
+  },
+  "notFound": {
     "title": "Page Not Found",
     "description": "Oops! The page you're looking for seems to have wandered off. Let's get you back on track.",
     "button": "Go Back To Home",
@@ -1620,5 +1630,27 @@
       "veryGood": "Very Good",
       "excellent": "Excellent"
     }
+  },
+  "specializations": {
+    "Medical": "Medical",
+    "Healthcare": "Healthcare",
+    "Banking": "Banking",
+    "Finance": "Finance",
+    "Telecom": "Telecom",
+    "Government": "Government",
+    "Education": "Education",
+    "Restaurant": "Restaurant",
+    "Retail": "Retail",
+    "Technology": "Technology",
+    "Automotive": "Automotive",
+    "Real Estate": "Real Estate",
+    "Legal": "Legal",
+    "Consulting": "Consulting",
+    "Entertainment": "Entertainment",
+    "Fitness": "Fitness",
+    "Beauty": "Beauty",
+    "Travel": "Travel",
+    "Insurance": "Insurance",
+    "Logistics": "Logistics"
   }
 }

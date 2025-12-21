@@ -5,7 +5,7 @@ import ThemeToggle from "@/components/ThemeToggle";
 import { useTranslations } from "@/hooks/useTranslations";
 import { API_URL } from '@/lib/api';
 import { useEffect, useMemo, useState } from "react";
-import { FaBan, FaBars, FaBox, FaBuilding, FaBullhorn, FaChartBar, FaCheckCircle, FaCheckSquare, FaChevronLeft, FaChevronRight, FaClock, FaCreditCard, FaCrown, FaDollarSign, FaDownload, FaEdit, FaEye, FaPlus, FaSearch, FaServer, FaSignOutAlt, FaSquare, FaStar, FaSync, FaTag, FaTicketAlt, FaTimes, FaTimesCircle, FaTrash, FaUndo, FaUserSecret, FaUserShield, FaUsers } from "react-icons/fa";
+import { FaBan, FaBars, FaBox, FaBuilding, FaBullhorn, FaChartBar, FaCheckCircle, FaCheckSquare, FaChevronLeft, FaChevronRight, FaCircle, FaClock, FaCreditCard, FaCrown, FaDollarSign, FaDownload, FaEdit, FaEye, FaPlus, FaSearch, FaSignOutAlt, FaSquare, FaStar, FaSync, FaTicketAlt, FaTimes, FaTimesCircle, FaTrash, FaUserSecret, FaUserShield, FaUsers } from "react-icons/fa";
 
 const API = `${API_URL}/api/v1/admin/admin`;
 
@@ -34,21 +34,23 @@ export default function Page() {
   const [filter, setFilter] = useState("all");
   const [submitting, setSubmitting] = useState(false);
   const [selected, setSelected] = useState([]);
-  const perPage = 9;
+  const [selectedBusiness, setSelectedBusiness] = useState(null);
+  const perPage = 12;
 
   const showToast = (m, t = "success") => { setToast({ message: m, type: t }); setTimeout(() => setToast(null), 3000); };
   const api = async (url, opts = {}) => fetch(url, { credentials: "include", ...opts, headers: { "Content-Type": "application/json", ...opts.headers } });
 
-  const refresh = async () => {
-    setLoading(true);
+  const refresh = async (showLoading = true) => {
+    if (showLoading) setLoading(true);
     try {
       const eps = ["users", "dashboard", "businesses", "tickets", "reviews", "categories", "payments", "staff", "subscriptions", "queue-monitoring", "system-health"];
       const res = await Promise.all(eps.map(e => api(`${API}/${e}`).then(r => r.ok ? r.json() : null).catch(() => null)));
       setData({ users: res[0], dashboard: res[1], businesses: res[2], tickets: res[3], reviews: res[4], categories: res[5], payments: res[6], staff: res[7], subscriptions: res[8], queues: res[9], health: res[10] });
-      showToast(t('adminDashboard.common.refresh'));
+      if (showLoading) showToast(t('adminDashboard.common.refresh'));
     } catch (e) { showToast(t('toast.failed'), "error"); }
-    setLoading(false);
+    if (showLoading) setLoading(false);
   };
+
 
   useEffect(() => { refresh(); api(`${API_URL}/api/v1/auth/me`).then(r => r.ok ? r.json() : null).then(d => setAdminInfo(d?.data || d?.user)); }, []);
 
@@ -72,73 +74,1006 @@ export default function Page() {
   const totalPages = (items) => Math.ceil(items.length / perPage);
   const statusColor = (s) => ({ waiting: "bg-amber-500/10 text-amber-600", completed: "bg-emerald-500/10 text-emerald-600", cancelled: "bg-red-500/10 text-red-600", active: "bg-emerald-500/10 text-emerald-600", inactive: "bg-gray-500/10 text-gray-600" }[s] || "bg-gray-500/10 text-gray-600");
 
-  const deleteUser = async (id) => { if (!id) return; setSubmitting(true); const r = await api(`${API}/users/${id}`, { method: "DELETE" }); if (r.ok) { showToast(t('toast.deleted')); refresh(); } else showToast(t('toast.failed'), "error"); setSubmitting(false); setDeleteConfirm(null); };
-  const banUser = async (id, ban) => { if (!id) return; await api(`${API}/users/${id}/${ban ? "unban" : "ban"}`, { method: "PATCH", body: JSON.stringify({}) }); showToast(ban ? t('toast.unbanned') : t('toast.banned')); refresh(); };
-  const updateUser = async () => { if (!editingUser?._id) return; setSubmitting(true); const r = await api(`${API}/users/${editingUser._id}`, { method: "PUT", body: JSON.stringify(editForm) }); if (r.ok) { showToast(t('toast.updated')); refresh(); setEditingUser(null); } else showToast(t('toast.failed'), "error"); setSubmitting(false); };
-  const updateBusiness = async () => { if (!editingBusiness?._id) return; setSubmitting(true); const r = await api(`${API_URL}/api/v1/businesses/business/${editingBusiness._id}`, { method: "PUT", body: JSON.stringify(businessForm) }); if (r.ok) { showToast(t('toast.updated')); refresh(); setEditingBusiness(null); } else showToast(t('toast.failed'), "error"); setSubmitting(false); };
-  const deleteBusiness = async (id) => { if (!id) return; setSubmitting(true); const r = await api(`${API_URL}/api/v1/businesses/business/${id}`, { method: "DELETE" }); if (r.ok) { showToast(t('toast.deleted')); refresh(); } else showToast(t('toast.failed'), "error"); setSubmitting(false); setDeleteConfirm(null); };
-  const toggleStatus = async (b) => { if (!b?._id) return; await api(`${API_URL}/api/v1/businesses/business/${b._id}`, { method: "PUT", body: JSON.stringify({ status: b.status === "active" ? "inactive" : "active" }) }); showToast(t('toast.updated')); refresh(); };
-  const deleteReview = async (id) => { if (!id) return; setSubmitting(true); await api(`${API}/reviews/${id}`, { method: "DELETE" }); showToast(t('toast.deleted')); refresh(); setSubmitting(false); setDeleteConfirm(null); };
-  const createAdmin = async () => { if (!newAdmin.name || !newAdmin.email || !newAdmin.password) { showToast(t('adminDashboard.common.fillFields'), "error"); return; } setSubmitting(true); const r = await api(`${API}/create-admin`, { method: "POST", body: JSON.stringify(newAdmin) }); if (r.ok) { showToast(t('toast.created')); setShowCreateAdmin(false); setNewAdmin({ name: "", email: "", password: "" }); refresh(); } else { const e = await r.json(); showToast(e.message || t('toast.failed'), "error"); } setSubmitting(false); };
+  const deleteUser = async (id) => { if (!id) return; setSubmitting(true); const r = await api(`${API}/users/${id}`, { method: "DELETE" }); if (r.ok) { showToast(t('toast.deleted')); refresh(false); } else showToast(t('toast.failed'), "error"); setSubmitting(false); setDeleteConfirm(null); };
+  const banUser = async (id, isBanned) => { if (!id || submitting) return; setSubmitting(true); try { const r = await api(`${API}/users/${id}/${isBanned ? "unban" : "ban"}`, { method: "PATCH", body: JSON.stringify({}) }); if (r.ok) { showToast(isBanned ? t('toast.unbanned') : t('toast.banned')); refresh(false); } else showToast(t('toast.failed'), "error"); } catch (e) { showToast(t('toast.failed'), "error"); } setSubmitting(false); };
+  const updateUser = async () => { if (!editingUser?._id) return; setSubmitting(true); const r = await api(`${API}/users/${editingUser._id}`, { method: "PUT", body: JSON.stringify(editForm) }); if (r.ok) { showToast(t('toast.updated')); refresh(false); setEditingUser(null); } else showToast(t('toast.failed'), "error"); setSubmitting(false); };
+
+  const updateBusiness = async () => { if (!editingBusiness?._id) return; setSubmitting(true); const r = await api(`${API_URL}/api/v1/businesses/business/${editingBusiness._id}`, { method: "PUT", body: JSON.stringify(businessForm) }); if (r.ok) { showToast(t('toast.updated')); refresh(false); setEditingBusiness(null); } else showToast(t('toast.failed'), "error"); setSubmitting(false); };
+  const deleteBusiness = async (id) => { if (!id) return; setSubmitting(true); const r = await api(`${API_URL}/api/v1/businesses/business/${id}`, { method: "DELETE" }); if (r.ok) { showToast(t('toast.deleted')); refresh(false); } else showToast(t('toast.failed'), "error"); setSubmitting(false); setDeleteConfirm(null); };
+  const toggleStatus = async (b) => { if (!b?._id || submitting) return; setSubmitting(true); await api(`${API_URL}/api/v1/businesses/business/${b._id}`, { method: "PUT", body: JSON.stringify({ status: b.status === "active" ? "inactive" : "active" }) }); showToast(t('toast.updated')); refresh(false); setSubmitting(false); };
+  const deleteReview = async (id) => { if (!id) return; setSubmitting(true); await api(`${API}/reviews/${id}`, { method: "DELETE" }); showToast(t('toast.deleted')); refresh(false); setSubmitting(false); setDeleteConfirm(null); };
+  const createAdmin = async () => { if (!newAdmin.name || !newAdmin.email || !newAdmin.password) { showToast(t('adminDashboard.common.fillFields'), "error"); return; } setSubmitting(true); const r = await api(`${API}/create-admin`, { method: "POST", body: JSON.stringify(newAdmin) }); if (r.ok) { showToast(t('toast.created')); setShowCreateAdmin(false); setNewAdmin({ name: "", email: "", password: "" }); refresh(false); } else { const e = await r.json(); showToast(e.message || t('toast.failed'), "error"); } setSubmitting(false); };
   const sendAnnouncement = async () => { if (!announcement.title || !announcement.message) { showToast(t('adminDashboard.common.fillFields'), "error"); return; } setSubmitting(true); const r = await api(`${API}/announcements`, { method: "POST", body: JSON.stringify(announcement) }); if (r.ok) { const d = await r.json(); showToast(d.message); setShowAnnouncement(false); setAnnouncement({ title: "", message: "", targetAudience: "all" }); } else showToast(t('toast.failed'), "error"); setSubmitting(false); };
-  const bulkAction = async (action, type) => { if (selected.length === 0) { showToast(t('adminDashboard.common.selectItems'), "error"); return; } setSubmitting(true); const r = await api(`${API}/bulk-action`, { method: "POST", body: JSON.stringify({ action, type, ids: selected }) }); if (r.ok) { const d = await r.json(); showToast(d.message); setSelected([]); refresh(); } else showToast(t('toast.failed'), "error"); setSubmitting(false); };
+  const bulkAction = async (action, type) => { if (selected.length === 0) { showToast(t('adminDashboard.common.selectItems'), "error"); return; } setSubmitting(true); const r = await api(`${API}/bulk-action`, { method: "POST", body: JSON.stringify({ action, type, ids: selected }) }); if (r.ok) { const d = await r.json(); showToast(d.message); setSelected([]); refresh(false); } else showToast(t('toast.failed'), "error"); setSubmitting(false); };
+
   const exportData = (type) => { window.open(`${API}/export/${type}`, "_blank"); };
+
+
   const toggleSelect = (id) => { if (!id) return; setSelected(s => s.includes(id) ? s.filter(x => x !== id) : [...s, id]); };
   const selectAll = (items) => setSelected(s => s.length === items.length ? [] : items.filter(i => i?._id).map(i => i._id));
 
-  const tabs = [{ id: "dashboard", label: t('adminDashboard.tabs.overview'), icon: FaChartBar }, { id: "users", label: t('adminDashboard.tabs.users'), icon: FaUsers }, { id: "businesses", label: t('adminDashboard.tabs.businesses'), icon: FaBuilding }, { id: "tickets", label: t('adminDashboard.tabs.tickets'), icon: FaTicketAlt }, { id: "reviews", label: t('adminDashboard.tabs.reviews'), icon: FaStar }, { id: "payments", label: t('adminDashboard.tabs.payments'), icon: FaCreditCard }, { id: "subscriptions", label: t('adminDashboard.tabs.subscriptions'), icon: FaBox }, { id: "categories", label: t('adminDashboard.tabs.categories'), icon: FaTag }, { id: "queues", label: t('adminDashboard.tabs.queueMonitor'), icon: FaClock }, { id: "admins", label: t('adminDashboard.tabs.admins'), icon: FaUserSecret }, { id: "health", label: t('adminDashboard.tabs.systemHealth'), icon: FaServer }];
+  const tabs = [{ id: "dashboard", label: t('adminDashboard.tabs.overview'), icon: FaChartBar }, { id: "users", label: t('adminDashboard.tabs.users'), icon: FaUsers }, { id: "businesses", label: t('adminDashboard.tabs.businesses'), icon: FaBuilding }, { id: "tickets", label: t('adminDashboard.tabs.tickets'), icon: FaTicketAlt }, { id: "reviews", label: t('adminDashboard.tabs.reviews'), icon: FaStar }, { id: "payments", label: t('adminDashboard.tabs.payments'), icon: FaCreditCard }, { id: "subscriptions", label: t('adminDashboard.tabs.subscriptions'), icon: FaBox }, { id: "queues", label: t('adminDashboard.tabs.queueMonitor'), icon: FaClock }, { id: "admins", label: t('adminDashboard.tabs.admins'), icon: FaUserSecret }];
 
-  if (loading) return <div className="min-h-screen bg-gray-50 dark:bg-gray-950 flex items-center justify-center"><div className="w-12 h-12 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin" /></div>;
-  if (error) return <div className="min-h-screen bg-gray-50 dark:bg-gray-950 flex items-center justify-center"><div className="card-enterprise p-8 text-center"><FaTimesCircle className="text-red-500 text-4xl mx-auto mb-4" /><p>{error}</p><button onClick={refresh} className="btn-primary mt-4">{t('adminDashboard.common.retry')}</button></div></div>;
+
+  if (loading) return (
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-950 admin-bg-gradient flex items-center justify-center">
+      <div className="card-admin-glass p-10 text-center">
+        <div className="w-20 h-20 mx-auto mb-6 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin" />
+        <p className="text-xl font-semibold text-gray-700 dark:text-gray-200 animate-pulse">{t('adminDashboard.common.loading') || 'Loading...'}</p>
+      </div>
+    </div>
+  );
+  if (error) return (
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-950 admin-bg-gradient flex items-center justify-center">
+      <div className="card-admin-glass p-10 text-center max-w-md">
+        <div className="w-20 h-20 mx-auto mb-6 rounded-2xl bg-red-100 dark:bg-red-900/30 flex items-center justify-center">
+          <FaTimesCircle className="text-red-500 text-4xl" />
+        </div>
+        <p className="text-lg font-medium mb-6 text-gray-700 dark:text-gray-300">{error}</p>
+        <button onClick={refresh} className="px-6 py-3 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 text-white font-semibold hover:shadow-lg hover:shadow-emerald-500/30 transition-all">{t('adminDashboard.common.retry')}</button>
+      </div>
+    </div>
+  );
+
 
   return (
     <ProtectedRoute allowedRoles={["admin"]}>
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-950 text-gray-900 dark:text-white">
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-950 admin-bg-gradient text-gray-900 dark:text-white">
         <div className="lg:hidden fixed top-0 left-0 right-0 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 p-4 flex justify-between items-center z-50"><button onClick={() => setSidebarOpen(true)}><FaBars /></button><span className="font-bold gradient-text">{t('adminDashboard.sidebar.adminRole')}</span><div className="w-8 h-8 rounded-lg bg-emerald-500 flex items-center justify-center text-white font-bold text-sm">{adminInfo?.name?.charAt(0) || "A"}</div></div>
         <div className="flex">
           {sidebarOpen && <div className="fixed inset-0 bg-black/50 z-40 lg:hidden" onClick={() => setSidebarOpen(false)} />}
-          <aside className={`fixed lg:sticky top-0 left-0 z-50 h-screen bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800 transition-all ${sidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"} ${sidebarCollapsed ? "w-16" : "w-56"}`}>
+          <aside className={`fixed lg:sticky top-0 left-0 z-50 h-screen bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl border-r border-gray-200 dark:border-gray-800 transition-all duration-300 ${sidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"} ${sidebarCollapsed ? "w-20" : "w-64"}`}>
             <div className="flex flex-col h-full">
-              <div className="p-3 border-b border-gray-200 dark:border-gray-800 flex items-center justify-between">{!sidebarCollapsed && <div className="flex items-center gap-2"><FaCrown className="text-emerald-500" /><span className="font-bold text-sm">{t('adminDashboard.title')}</span></div>}<button onClick={() => setSidebarCollapsed(!sidebarCollapsed)} className="hidden lg:block"><FaChevronLeft className={sidebarCollapsed ? "rotate-180" : ""} /></button><button onClick={() => setSidebarOpen(false)} className="lg:hidden"><FaTimes /></button></div>
-              <nav className="flex-1 p-2 overflow-y-auto space-y-1">{tabs.map(tab => <button key={tab.id} onClick={() => { setActiveTab(tab.id); setSidebarOpen(false); setSearch(""); setPage(1); setSelected([]); }} className={`w-full flex items-center gap-2 px-3 py-2 rounded text-sm ${activeTab === tab.id ? "bg-emerald-500/10 text-emerald-600 font-medium" : "text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800"}`}><tab.icon />{!sidebarCollapsed && tab.label}</button>)}</nav>
-              {!sidebarCollapsed && <div className="p-2 border-t border-gray-200 dark:border-gray-800 space-y-2"><div className="flex justify-between text-xs"><span className="text-gray-500">{t('adminDashboard.sidebar.theme')}</span><ThemeToggle /></div><div className="flex justify-between text-xs"><span className="text-gray-500">{t('adminDashboard.sidebar.lang')}</span><LanguageSwitcher /></div></div>}
-              <div className="p-2 border-t border-gray-200 dark:border-gray-800"><div className="flex items-center gap-2 mb-2"><div className="w-8 h-8 rounded-lg bg-emerald-500 flex items-center justify-center text-white font-bold text-sm">{adminInfo?.name?.charAt(0) || "A"}</div>{!sidebarCollapsed && <div className="text-xs"><p className="font-medium truncate">{adminInfo?.name}</p><p className="text-gray-500 truncate">{adminInfo?.email}</p></div>}</div>{!sidebarCollapsed && <button onClick={() => { localStorage.removeItem('accessToken'); document.cookie = 'accessToken=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;'; document.cookie = 'refreshToken=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;'; api(`${API_URL}/api/v1/auth/logout`, { method: "POST" }); window.location.href = "/admin/login"; }} className="w-full px-3 py-1.5 rounded bg-red-500/10 text-red-600 text-sm flex items-center justify-center gap-2"><FaSignOutAlt /> {t('adminDashboard.sidebar.logout')}</button>}</div>
+              <div className="p-4 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between">
+                {!sidebarCollapsed && (
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center text-white shadow-lg shadow-emerald-500/20">
+                      <FaCrown />
+                    </div>
+                    <span className="font-bold text-lg tracking-tight">{t('adminDashboard.title')}</span>
+                  </div>
+                )}
+                <button onClick={() => setSidebarCollapsed(!sidebarCollapsed)} className="hidden lg:flex w-8 h-8 items-center justify-center rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+                  <FaChevronLeft className={`transition-transform duration-300 ${sidebarCollapsed ? "rotate-180" : ""}`} />
+                </button>
+                <button onClick={() => setSidebarOpen(false)} className="lg:hidden p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800"><FaTimes /></button>
+              </div>
+              
+              <nav className="flex-1 p-4 overflow-y-auto space-y-1.5 scrollbar-thin">
+                {tabs.map(tab => (
+                  <button 
+                    key={tab.id} 
+                    onClick={() => { setActiveTab(tab.id); setSidebarOpen(false); setSearch(""); setPage(1); setSelected([]); setSelectedBusiness(null); }} 
+                    className={`w-full flex items-center gap-3 px-4 py-3.5 rounded-xl text-sm font-medium transition-all duration-300 group relative overflow-hidden ${
+                      activeTab === tab.id 
+                        ? "sidebar-tab-active text-emerald-600 dark:text-emerald-400 shadow-lg shadow-emerald-500/10" 
+                        : "text-gray-600 dark:text-gray-400 hover:bg-gradient-to-r hover:from-gray-50 hover:to-transparent dark:hover:from-gray-800/50 hover:text-gray-900 dark:hover:text-white"
+                    }`}
+                  >
+                    <div className={`w-9 h-9 rounded-lg flex items-center justify-center transition-all duration-300 ${activeTab === tab.id ? "bg-gradient-to-br from-emerald-500 to-teal-600 text-white shadow-lg shadow-emerald-500/30" : "bg-gray-100 dark:bg-gray-800 text-gray-500 group-hover:bg-gray-200 dark:group-hover:bg-gray-700 group-hover:text-gray-700 dark:group-hover:text-gray-200"}`}>
+                      <tab.icon className="text-base" />
+                    </div>
+                    {!sidebarCollapsed && <span className="font-medium">{tab.label}</span>}
+                    {activeTab === tab.id && !sidebarCollapsed && <div className="ml-auto w-2 h-2 rounded-full bg-emerald-500 shadow-lg shadow-emerald-500/50 animate-pulse" />}
+                  </button>
+                ))}
+              </nav>
+
+              {!sidebarCollapsed && (
+                <div className="p-4 mx-4 mb-4 rounded-2xl bg-gray-50 dark:bg-gray-800/50 border border-gray-100 dark:border-gray-800 space-y-3">
+                  <div className="flex justify-between items-center text-xs">
+                    <span className="font-medium text-gray-500">{t('adminDashboard.sidebar.theme')}</span>
+                    <ThemeToggle />
+                  </div>
+                  <div className="flex justify-between items-center text-xs">
+                    <span className="font-medium text-gray-500">{t('adminDashboard.sidebar.lang')}</span>
+                    <LanguageSwitcher dropUp={true} />
+                  </div>
+                </div>
+              )}
+
+              <div className="p-4 border-t border-gray-100 dark:border-gray-800">
+                <div className={`flex items-center gap-3 mb-4 ${sidebarCollapsed ? "justify-center" : ""}`}>
+                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center text-white font-bold shadow-lg shadow-emerald-500/20">
+                    {adminInfo?.name?.charAt(0) || "A"}
+                  </div>
+                  {!sidebarCollapsed && (
+                    <div className="overflow-hidden">
+                      <p className="font-semibold text-sm truncate text-gray-900 dark:text-white">{adminInfo?.name}</p>
+                      <p className="text-xs text-gray-500 truncate">{adminInfo?.email}</p>
+                    </div>
+                  )}
+                </div>
+                {!sidebarCollapsed ? (
+                  <button 
+                    onClick={() => { localStorage.removeItem('accessToken'); document.cookie = 'accessToken=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;'; document.cookie = 'refreshToken=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;'; api(`${API_URL}/api/v1/auth/logout`, { method: "POST" }); window.location.href = "/admin/login"; }} 
+                    className="w-full px-4 py-2.5 rounded-xl bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400 text-sm font-medium flex items-center justify-center gap-2 hover:bg-red-100 dark:hover:bg-red-500/20 transition-colors"
+                  >
+                    <FaSignOutAlt /> {t('adminDashboard.sidebar.logout')}
+                  </button>
+                ) : (
+                  <button onClick={() => { localStorage.removeItem('accessToken'); window.location.href = "/admin/login"; }} className="w-10 h-10 mx-auto flex items-center justify-center text-red-500 hover:bg-red-50 rounded-xl">
+                    <FaSignOutAlt />
+                  </button>
+                )}
+              </div>
             </div>
           </aside>
-          <main className="flex-1 min-h-screen pt-14 lg:pt-0 p-4">
-            <div className="flex flex-wrap gap-3 justify-between items-center mb-6"><div><h1 className="text-xl font-bold">{tabs.find(tab => tab.id === activeTab)?.label}</h1><p className="text-gray-500 text-sm">{new Date().toLocaleDateString()}</p></div><div className="flex gap-2"><button onClick={() => setShowAnnouncement(true)} className="px-3 py-2 rounded bg-indigo-500/10 text-indigo-600 text-sm flex items-center gap-2"><FaBullhorn /> {t('adminDashboard.announcement.button')}</button><button onClick={refresh} className="px-3 py-2 rounded bg-emerald-500/10 text-emerald-600 text-sm flex items-center gap-2"><FaSync className={loading ? "animate-spin" : ""} /> {t('adminDashboard.common.refresh')}</button></div></div>
+          <main className="flex-1 min-h-screen pt-20 lg:pt-8 p-6 lg:p-8">
+            <div className="flex flex-wrap gap-4 justify-between items-center mb-8">
+              <div>
+                <h1 className="text-2xl lg:text-3xl font-bold text-gray-900 dark:text-white">{tabs.find(tab => tab.id === activeTab)?.label}</h1>
+                <p className="text-gray-500 text-sm mt-1 flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                  {new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+                </p>
+              </div>
+              <div className="flex gap-4">
+                <button onClick={() => setShowAnnouncement(true)} className="px-6 py-3 rounded-xl bg-gradient-to-r from-indigo-500 to-purple-600 text-white text-sm font-semibold flex items-center gap-2.5 hover:shadow-lg hover:shadow-indigo-500/30 hover:scale-105 transition-all duration-300">
+                  <FaBullhorn /> {t('adminDashboard.announcement.button')}
+                </button>
+                <button onClick={refresh} className="px-6 py-3 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 text-white text-sm font-semibold flex items-center gap-2.5 hover:shadow-lg hover:shadow-emerald-500/30 hover:scale-105 transition-all duration-300">
+                  <FaSync className={loading ? "animate-spin" : ""} /> {t('adminDashboard.common.refresh')}
+                </button>
+              </div>
 
-            {activeTab === "dashboard" && <div className="space-y-4"><div className="grid grid-cols-2 md:grid-cols-4 gap-3">{[{ l: t('adminDashboard.overview.totalUsers'), v: d.userCount || users.length, c: "emerald", i: FaUsers }, { l: t('adminDashboard.overview.totalBusinesses'), v: d.businessCount || businesses.length, c: "teal", i: FaBuilding }, { l: t('adminDashboard.overview.totalTickets'), v: d.ticketStats?.total || tickets.length, c: "indigo", i: FaTicketAlt }, { l: t('adminDashboard.overview.totalRevenue'), v: "$" + (d.totalRevenue || 0), c: "amber", i: FaDollarSign }].map((s, i) => <div key={i} className="card-enterprise p-4"><div className="flex items-center gap-2 mb-2"><div className={`w-8 h-8 rounded bg-${s.c}-500/10 flex items-center justify-center`}><s.i className={`text-${s.c}-500`} /></div></div><p className="text-2xl font-bold">{s.v}</p><p className="text-xs text-gray-500">{s.l}</p></div>)}</div><div className="grid grid-cols-2 md:grid-cols-4 gap-3">{[{ l: t('adminDashboard.overview.todayUsers'), v: d.todayStats?.users || 0 }, { l: t('adminDashboard.overview.todayBiz'), v: d.todayStats?.businesses || 0 }, { l: t('adminDashboard.overview.todayTickets'), v: d.todayStats?.tickets || 0 }, { l: t('adminDashboard.overview.completed'), v: d.ticketStats?.completed || 0 }].map((s, i) => <div key={i} className="card-enterprise p-3 text-center"><p className="text-xl font-bold">{s.v}</p><p className="text-xs text-gray-500">{s.l}</p></div>)}</div></div>}
+            </div>
 
-            {activeTab === "users" && <div className="space-y-4"><div className="flex flex-wrap gap-2 justify-between"><div className="flex gap-2"><div className="relative"><FaSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" /><input placeholder={t('adminDashboard.users.searchPlaceholder')} value={search} onChange={e => { setSearch(e.target.value); setPage(1); }} className="input-enterprise pl-10 text-sm w-40" /></div><button onClick={() => exportData("users")} className="px-3 py-2 rounded bg-gray-100 dark:bg-gray-800 text-sm flex items-center gap-2"><FaDownload /> {t('adminDashboard.users.export')}</button></div>{selected.length > 0 && <div className="flex gap-2"><button onClick={() => bulkAction("ban", "users")} className="px-3 py-1 rounded bg-amber-500/10 text-amber-600 text-xs">{t('adminDashboard.users.ban')} ({selected.length})</button><button onClick={() => bulkAction("delete", "users")} className="px-3 py-1 rounded bg-red-500/10 text-red-600 text-xs">{t('adminDashboard.users.delete')} ({selected.length})</button></div>}</div><div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">{paginate(filterFn(users, ["name", "email"])).map(u => <div key={u._id} className={`card-enterprise p-3 ${u.isBanned ? "border-red-300 dark:border-red-800" : ""}`}><div className="flex items-center gap-2 mb-2"><button onClick={() => toggleSelect(u._id)}>{selected.includes(u._id) ? <FaCheckSquare className="text-emerald-500" /> : <FaSquare className="text-gray-400" />}</button><div className={`w-8 h-8 rounded flex items-center justify-center text-white font-bold text-sm ${u.isBanned ? "bg-red-500" : "bg-emerald-500"}`}>{u.name?.charAt(0)}</div><div><p className="font-medium text-sm">{u.name} {u.isBanned && <span className="text-red-500 text-xs">({t('adminDashboard.users.banned')})</span>}</p><p className="text-xs text-gray-500">{u.email}</p></div></div><div className="flex gap-1"><button onClick={() => { setEditingUser(u); setEditForm({ name: u.name, email: u.email, phone: u.phone || "" }); }} className="px-2 py-1 rounded bg-indigo-500/10 text-indigo-600 text-xs"><FaEdit /></button><button onClick={() => banUser(u._id, u.isBanned)} className={`px-2 py-1 rounded text-xs ${u.isBanned ? "bg-emerald-500/10 text-emerald-600" : "bg-amber-500/10 text-amber-600"}`}>{u.isBanned ? <FaUndo /> : <FaBan />}</button><button onClick={() => setDeleteConfirm({ t: "user", id: u._id, n: u.name })} className="px-2 py-1 rounded bg-red-500/10 text-red-600 text-xs"><FaTrash /></button></div></div>)}</div>{totalPages(filterFn(users, ["name", "email"])) > 1 && <div className="flex justify-center gap-2"><button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1} className="px-3 py-1 bg-gray-100 dark:bg-gray-800 rounded disabled:opacity-50"><FaChevronLeft /></button><span>{page}/{totalPages(filterFn(users, ["name", "email"]))}</span><button onClick={() => setPage(p => p + 1)} disabled={page >= totalPages(filterFn(users, ["name", "email"]))} className="px-3 py-1 bg-gray-100 dark:bg-gray-800 rounded disabled:opacity-50"><FaChevronRight /></button></div>}</div>}
 
-            {activeTab === "businesses" && <div className="space-y-4"><div className="flex gap-2"><div className="relative"><FaSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" /><input placeholder={t('adminDashboard.businesses.searchPlaceholder')} value={search} onChange={e => setSearch(e.target.value)} className="input-enterprise pl-10 text-sm w-40" /></div><button onClick={() => exportData("businesses")} className="px-3 py-2 rounded bg-gray-100 dark:bg-gray-800 text-sm flex items-center gap-2"><FaDownload /> {t('adminDashboard.users.export')}</button></div><div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">{paginate(filterFn(businesses, ["name"])).map(b => <div key={b._id} className="card-enterprise p-3"><div className="flex justify-between mb-2"><div className="flex items-center gap-2"><div className="w-8 h-8 rounded bg-teal-500 flex items-center justify-center text-white font-bold text-sm">{b.name?.charAt(0)}</div><div><p className="font-medium text-sm">{b.name}</p><p className="text-xs text-gray-500">{b.specialization}</p></div></div><button onClick={() => toggleStatus(b)} className={`px-2 py-1 rounded-full text-xs ${statusColor(b.status)}`}>{t(`adminDashboard.statuses.${b.status}`)}</button></div><div className="flex gap-1"><button onClick={() => setViewBusiness(b)} className="px-2 py-1 rounded bg-gray-500/10 text-gray-600 text-xs"><FaEye /></button><button onClick={() => { setEditingBusiness(b); setBusinessForm({ name: b.name, email: b.email, status: b.status }); }} className="px-2 py-1 rounded bg-indigo-500/10 text-indigo-600 text-xs"><FaEdit /></button><button onClick={() => setDeleteConfirm({ t: "business", id: b._id, n: b.name })} className="px-2 py-1 rounded bg-red-500/10 text-red-600 text-xs"><FaTrash /></button></div></div>)}</div></div>}
+            {activeTab === "dashboard" && (
+              <div className="space-y-8">
+                {/* Main Stats Cards */}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                  {[
+                    { l: t('adminDashboard.overview.totalUsers'), v: d.userCount || users.length, gradient: "icon-gradient-emerald", i: FaUsers, trend: "+12%", trendUp: true },
+                    { l: t('adminDashboard.overview.totalBusinesses'), v: d.businessCount || businesses.length, gradient: "icon-gradient-teal", i: FaBuilding, trend: "+8%", trendUp: true },
+                    { l: t('adminDashboard.overview.totalTickets'), v: d.ticketStats?.total || tickets.length, gradient: "icon-gradient-indigo", i: FaTicketAlt, trend: "+15%", trendUp: true },
+                    { l: t('adminDashboard.overview.totalRevenue'), v: "$" + (d.totalRevenue || 0), gradient: "icon-gradient-amber", i: FaDollarSign, trend: "+22%", trendUp: true }
+                  ].map((s, i) => (
+                    <div key={i} className="card-admin-glass p-6 group">
+                      <div className="flex justify-between items-start mb-6">
+                        <div className={`w-16 h-16 rounded-2xl ${s.gradient} flex items-center justify-center text-white`}>
+                          <s.i className="text-2xl" />
+                        </div>
+                        <div className={`px-3 py-1.5 rounded-full ${s.trendUp ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400' : 'bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400'} text-xs font-bold flex items-center gap-1`}>
+                          <span className={s.trendUp ? "" : "rotate-180"}>↑</span>{s.trend}
+                        </div>
+                      </div>
+                      <p className="text-4xl font-bold text-gray-900 dark:text-white mb-2">{s.v}</p>
+                      <p className="text-sm font-medium text-gray-500 dark:text-gray-400">{s.l}</p>
+                    </div>
+                  ))}
+                </div>
 
-            {activeTab === "tickets" && <div className="space-y-4"><div className="flex gap-2"><select value={filter} onChange={e => setFilter(e.target.value)} className="input-enterprise text-sm w-auto"><option value="all">{t('adminDashboard.tickets.filterAll')}</option><option value="waiting">{t('adminDashboard.tickets.filterWaiting')}</option><option value="completed">{t('adminDashboard.tickets.filterCompleted')}</option><option value="cancelled">{t('adminDashboard.tickets.filterCancelled')}</option></select><button onClick={() => exportData("tickets")} className="px-3 py-2 rounded bg-gray-100 dark:bg-gray-800 text-sm flex items-center gap-2"><FaDownload /> {t('adminDashboard.users.export')}</button></div><div className="card-enterprise overflow-x-auto"><table className="w-full text-sm"><thead><tr className="border-b border-gray-200 dark:border-gray-800"><th className="text-start p-2">#</th><th className="text-start p-2">{t('adminDashboard.tickets.business')}</th><th className="text-start p-2">{t('adminDashboard.tickets.customer')}</th><th className="text-start p-2">{t('adminDashboard.users.status')}</th><th className="text-start p-2">{t('adminDashboard.tickets.date')}</th></tr></thead><tbody>{tickets.filter(tk => filter === "all" || tk.status === filter).slice(0, 50).map(tk => <tr key={tk._id} className="border-b border-gray-100 dark:border-gray-800"><td className="p-2 font-bold text-emerald-600">#{tk.ticketNumber}</td><td className="p-2">{tk.businessId?.name || "N/A"}</td><td className="p-2">{tk.userId?.name || tk.guestName || t('adminDashboard.tickets.guest')}</td><td className="p-2"><span className={`px-2 py-1 rounded-full text-xs ${statusColor(tk.status)}`}>{t(`adminDashboard.statuses.${tk.status}`)}</span></td><td className="p-2 text-gray-500">{new Date(tk.createdAt).toLocaleDateString()}</td></tr>)}</tbody></table></div></div>}
+                
+                {/* Today's Activity Section */}
+                <div className="mt-10">
+                  <div className="flex items-center gap-3 mb-6">
+                    <div className="w-1.5 h-8 rounded-full bg-gradient-to-b from-emerald-500 to-teal-500"></div>
+                    <h2 className="text-xl font-bold text-gray-900 dark:text-white">{t('adminDashboard.overview.todayActivity')}</h2>
+                    <span className="px-2 py-1 rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 text-xs font-medium flex items-center gap-1">
+                      <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse"></span> Live
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-5">
+                    {[
+                      { l: t('adminDashboard.overview.todayUsers'), v: d.todayStats?.users || 0, icon: FaUsers, color: "from-purple-500 to-indigo-600" },
+                      { l: t('adminDashboard.overview.todayBiz'), v: d.todayStats?.businesses || 0, icon: FaBuilding, color: "from-cyan-500 to-blue-600" },
+                      { l: t('adminDashboard.overview.todayTickets'), v: d.todayStats?.tickets || 0, icon: FaTicketAlt, color: "from-orange-500 to-amber-600" },
+                      { l: t('adminDashboard.overview.completed'), v: d.ticketStats?.completed || 0, icon: FaCheckCircle, color: "from-emerald-500 to-green-600" }
+                    ].map((s, i) => (
+                      <div key={i} className="card-admin-glass p-5 flex items-center gap-4">
+                        <div className={`w-14 h-14 rounded-xl bg-gradient-to-br ${s.color} flex items-center justify-center text-white shadow-lg`}>
+                          <s.icon className="text-xl" />
+                        </div>
+                        <div>
+                          <p className="text-3xl font-bold text-gray-900 dark:text-white">{s.v}</p>
+                          <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">{s.l}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
 
-            {activeTab === "reviews" && <div className="space-y-4"><button onClick={() => exportData("reviews")} className="px-3 py-2 rounded bg-gray-100 dark:bg-gray-800 text-sm flex items-center gap-2"><FaDownload /> {t('adminDashboard.users.export')}</button><div className="grid grid-cols-1 md:grid-cols-2 gap-3">{reviews.slice(0, 20).map(r => <div key={r._id} className="card-enterprise p-3"><div className="flex justify-between mb-2"><div><p className="font-medium text-sm">{r.userId?.name || t('adminDashboard.reviews.anonymous')}</p><p className="text-xs text-gray-500">{r.businessId?.name}</p></div><div className="flex text-amber-500">{[...Array(r.rating)].map((_, i) => <FaStar key={i} className="text-xs" />)}</div></div><p className="text-sm text-gray-600 dark:text-gray-400 mb-2">{r.comment}</p><div className="flex justify-between"><span className="text-xs text-gray-500">{new Date(r.createdAt).toLocaleDateString()}</span><button onClick={() => setDeleteConfirm({ t: "review", id: r._id, n: "review" })} className="px-2 py-1 rounded bg-red-500/10 text-red-600 text-xs"><FaTrash /></button></div></div>)}</div></div>}
+            {activeTab === "users" && (
+              <div className="space-y-6 animate-fade-in">
+                <div className="card-admin-glass p-5 flex flex-wrap gap-4 justify-between items-center">
+                  <div className="flex gap-3">
+                    <div className="search-modern relative">
+                      <FaSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
+                      <input 
+                        placeholder={t('adminDashboard.users.searchPlaceholder')} 
+                        value={search} 
+                        onChange={e => { setSearch(e.target.value); setPage(1); }} 
+                        className="input-enterprise pl-11 text-sm w-72 !rounded-xl" 
+                      />
+                    </div>
+                    <button onClick={() => exportData("users")} className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-gray-100 to-gray-50 dark:from-gray-800 dark:to-gray-900 text-gray-700 dark:text-gray-300 text-sm font-medium flex items-center gap-2 hover:shadow-lg transition-all duration-300 border border-gray-200 dark:border-gray-700">
+                      <FaDownload className="text-emerald-500" /> {t('adminDashboard.users.export')}
+                    </button>
+                  </div>
+                  {selected.length > 0 && (
+                    <div className="flex gap-2 animate-fade-in">
 
-            {activeTab === "payments" && <div className="card-enterprise overflow-x-auto"><table className="w-full text-sm"><thead><tr className="border-b border-gray-200 dark:border-gray-800"><th className="text-start p-2">#</th><th className="text-start p-2">{t('adminDashboard.payments.business')}</th><th className="text-start p-2">{t('adminDashboard.payments.amount')}</th><th className="text-start p-2">{t('adminDashboard.payments.method')}</th><th className="text-start p-2">{t('adminDashboard.payments.date')}</th></tr></thead><tbody>{payments.map(p => <tr key={p._id} className="border-b border-gray-100 dark:border-gray-800"><td className="p-2">#{p.ticketNumber}</td><td className="p-2">{p.businessId?.name}</td><td className="p-2 font-bold text-emerald-600">${p.price || 0}</td><td className="p-2">{p.paymentMethod}</td><td className="p-2 text-gray-500">{new Date(p.createdAt).toLocaleDateString()}</td></tr>)}</tbody></table></div>}
+                      <button onClick={() => bulkAction("delete", "users")} className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-red-500/10 to-rose-500/10 text-red-600 dark:text-red-400 text-sm font-medium hover:from-red-500/20 hover:to-rose-500/20 transition-all border border-red-200/50 dark:border-red-800/50">
+                        {t('adminDashboard.users.delete')} ({selected.length})
+                      </button>
+                    </div>
+                  )}
+                </div>
 
-            {activeTab === "subscriptions" && <div className="space-y-4"><div className="grid grid-cols-4 gap-3">{[{ l: t('adminDashboard.subscriptions.stats.total'), v: subStats.total }, { l: t('adminDashboard.subscriptions.stats.active'), v: subStats.active, c: "emerald" }, { l: t('adminDashboard.subscriptions.stats.trial'), v: subStats.trial, c: "blue" }, { l: t('adminDashboard.subscriptions.stats.inactive'), v: subStats.inactive, c: "gray" }].map((s, i) => <div key={i} className="card-enterprise p-3 text-center"><p className={`text-xl font-bold ${s.c ? `text-${s.c}-600` : ""}`}>{s.v || 0}</p><p className="text-xs text-gray-500">{s.l}</p></div>)}</div><div className="card-enterprise overflow-x-auto"><table className="w-full text-sm"><thead><tr className="border-b border-gray-200 dark:border-gray-800"><th className="text-start p-2">{t('adminDashboard.subscriptions.business')}</th><th className="text-start p-2">{t('adminDashboard.subscriptions.plan')}</th><th className="text-start p-2">{t('adminDashboard.subscriptions.status')}</th></tr></thead><tbody>{subs.map(s => <tr key={s._id} className="border-b border-gray-100 dark:border-gray-800"><td className="p-2">{s.businessName}</td><td className="p-2 capitalize">{s.plan}</td><td className="p-2"><span className={`px-2 py-1 rounded-full text-xs ${statusColor(s.status)}`}>{t(`adminDashboard.statuses.${s.status}`)}</span></td></tr>)}</tbody></table></div></div>}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+                  {paginate(filterFn(users, ["name", "email"])).length === 0 ? (
+                    <div className="col-span-full text-center py-16 card-admin-glass">
+                      <FaUsers className="text-5xl text-gray-300 dark:text-gray-600 mx-auto mb-4" />
+                      <p className="text-gray-500 dark:text-gray-400 font-medium">No users found</p>
+                      <p className="text-gray-400 dark:text-gray-500 text-sm mt-1">Try adjusting your search or filters</p>
+                    </div>
+                  ) : paginate(filterFn(users, ["name", "email"])).map((u, idx) => (
+                    <div key={u._id} className={`card-admin-glass p-0 overflow-hidden ${u.isBanned ? "border-red-300/50 dark:border-red-900/30" : ""}`}>
+                      {/* Gradient header bar */}
+                      <div className={`h-1.5 w-full ${u.isBanned ? 'bg-gradient-to-r from-red-500 to-rose-600' : 'bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-500'}`}></div>
+                      <div className="p-5">
+                        <div className="flex items-start justify-between mb-4">
+                          <div className="flex items-center gap-3">
+                            <button onClick={() => toggleSelect(u._id)} className="text-gray-400 hover:text-emerald-500">
+                              {selected.includes(u._id) ? <FaCheckSquare className="text-emerald-500 text-xl" /> : <FaSquare className="text-xl" />}
+                            </button>
+                            <div className={`w-14 h-14 rounded-2xl flex items-center justify-center text-white font-bold text-xl ${u.isBanned ? "bg-gradient-to-br from-red-500 to-rose-600" : "icon-gradient-emerald"}`}>
+                              {u.name?.charAt(0)}
+                            </div>
 
-            {activeTab === "categories" && <div className="grid grid-cols-2 md:grid-cols-4 gap-3">{categories.map(c => <div key={c.name} className="card-enterprise p-4 flex justify-between items-center"><span>{c.name}</span><span className="px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-600 font-bold">{c.count}</span></div>)}</div>}
+                            <div className="overflow-hidden">
+                              <p className="font-bold text-gray-900 dark:text-white truncate text-lg">{u.name}</p>
+                              <p className="text-sm text-gray-500 truncate">{u.email}</p>
+                              {u.isBanned && <span className="inline-flex items-center gap-1 mt-1.5 text-[10px] font-bold text-red-500 bg-red-100 dark:bg-red-900/30 px-2.5 py-1 rounded-full uppercase tracking-wider badge-glow-danger"><FaBan size={8} />{t('adminDashboard.users.banned')}</span>}
+                            </div>
+                          </div>
+                        </div>
+                        
+                        <div className="flex gap-2.5 pt-4 border-t border-gray-100 dark:border-gray-800/50">
+                          <button disabled={submitting} onClick={() => { setEditingUser(u); setEditForm({ name: u.name, email: u.email, phone: u.phone || "" }); }} className="flex-1 py-2.5 rounded-xl bg-gradient-to-r from-indigo-500/10 to-purple-500/10 text-indigo-600 dark:text-indigo-400 text-xs font-semibold hover:from-indigo-500/20 hover:to-purple-500/20 transition-all flex items-center justify-center gap-2 border border-indigo-200/50 dark:border-indigo-800/30 disabled:opacity-50 disabled:cursor-not-allowed">
+                            <FaEdit /> {t('adminDashboard.common.edit')}
+                          </button>
+                          <button disabled={submitting} onClick={() => setDeleteConfirm({ t: "user", id: u._id, n: u.name })} className="w-12 py-2.5 rounded-xl bg-gradient-to-r from-red-500/10 to-rose-500/10 text-red-500 text-xs font-semibold hover:from-red-500/20 hover:to-rose-500/20 transition-all flex items-center justify-center border border-red-200/50 dark:border-red-800/30 disabled:opacity-50 disabled:cursor-not-allowed">
+                            <FaTrash />
+                          </button>
+                        </div>
 
-            {activeTab === "queues" && <div className="space-y-4"><p className="text-gray-500 text-sm">{t('adminDashboard.queues.liveStatus')}</p><div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">{queues.map(q => <div key={q._id} className="card-enterprise p-4"><div className="flex justify-between mb-2"><span className="font-medium">{q.businessName}</span><span className={`px-2 py-1 rounded-full text-xs ${statusColor(q.status)}`}>{t(`adminDashboard.statuses.${q.status}`)}</span></div><div className="grid grid-cols-3 gap-2 text-center"><div className="p-2 bg-gray-100 dark:bg-gray-800 rounded"><p className="text-lg font-bold">{q.currentNumber}</p><p className="text-xs text-gray-500">{t('adminDashboard.queues.current')}</p></div><div className="p-2 bg-amber-500/10 rounded"><p className="text-lg font-bold text-amber-600">{q.waiting}</p><p className="text-xs text-gray-500">{t('adminDashboard.queues.waiting')}</p></div><div className="p-2 bg-emerald-500/10 rounded"><p className="text-lg font-bold text-emerald-600">{q.serving}</p><p className="text-xs text-gray-500">{t('adminDashboard.queues.serving')}</p></div></div></div>)}</div>{queues.length === 0 && <p className="text-center text-gray-500 py-8">{t('adminDashboard.queues.noActiveQueues')}</p>}</div>}
+                      </div>
+                    </div>
+                  ))}
+                </div>
 
-            {activeTab === "admins" && <div className="space-y-4"><button onClick={() => setShowCreateAdmin(true)} className="btn-primary text-sm flex items-center gap-2"><FaPlus /> {t('adminDashboard.admins.addAdmin')}</button><div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">{admins.map(a => <div key={a._id} className="card-enterprise p-4 flex items-center gap-3"><FaUserShield className="text-2xl text-emerald-500" /><div><p className="font-medium">{a.name}</p><p className="text-sm text-gray-500">{a.email}</p></div></div>)}</div></div>}
 
-            {activeTab === "health" && <div className="space-y-4"><div className="grid grid-cols-2 md:grid-cols-4 gap-3">{[{ l: t('adminDashboard.health.database'), v: health.database ? t(`adminDashboard.statuses.${health.database}`) : "N/A", c: health.database === "connected" ? "emerald" : "red" }, { l: t('adminDashboard.health.uptime'), v: health.uptimeFormatted || "N/A" }, { l: t('adminDashboard.health.memory'), v: health.memory?.heapUsed || "N/A" }, { l: t('adminDashboard.health.nodeVersion'), v: health.nodeVersion || "N/A" }].map((s, i) => <div key={i} className="card-enterprise p-4 text-center"><p className={`text-lg font-bold ${s.c ? `text-${s.c}-600` : ""}`}>{s.v}</p><p className="text-xs text-gray-500">{s.l}</p></div>)}</div><div className="card-enterprise p-4"><h3 className="font-semibold mb-2">{t('adminDashboard.health.dbCounts')}</h3><div className="grid grid-cols-3 gap-3">{[{ l: t('adminDashboard.overview.totalUsers'), v: health.counts?.users }, { l: t('adminDashboard.overview.totalBusinesses'), v: health.counts?.businesses }, { l: t('adminDashboard.overview.totalTickets'), v: health.counts?.tickets }].map((s, i) => <div key={i} className="text-center p-3 bg-gray-100 dark:bg-gray-800 rounded"><p className="text-xl font-bold">{s.v || 0}</p><p className="text-xs text-gray-500">{s.l}</p></div>)}</div></div></div>}
+                {totalPages(filterFn(users, ["name", "email"])) > 1 && (
+                  <div className="flex justify-center gap-3 mt-8">
+                    <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1} className="w-12 h-12 rounded-xl card-admin-glass flex items-center justify-center disabled:opacity-40 hover:bg-gray-50 dark:hover:bg-gray-800 transition-all hover:scale-105"><FaChevronLeft className="rtl:rotate-180" /></button>
+                    <span className="flex items-center px-6 font-semibold text-gray-700 dark:text-gray-200 card-admin-glass rounded-xl" dir="ltr">{page} / {totalPages(filterFn(users, ["name", "email"]))}</span>
+                    <button onClick={() => setPage(p => p + 1)} disabled={page >= totalPages(filterFn(users, ["name", "email"]))} className="w-12 h-12 rounded-xl card-admin-glass flex items-center justify-center disabled:opacity-40 hover:bg-gray-50 dark:hover:bg-gray-800 transition-all hover:scale-105"><FaChevronRight className="rtl:rotate-180" /></button>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {activeTab === "businesses" && (
+              <div className="space-y-6 animate-fade-in">
+                <div className="card-admin-glass p-5 flex flex-wrap gap-4 justify-between items-center">
+                  <div className="flex gap-3">
+                    <div className="search-modern relative">
+                      <FaSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
+                      <input 
+                        placeholder={t('adminDashboard.businesses.searchPlaceholder')} 
+                        value={search} 
+                        onChange={e => setSearch(e.target.value)} 
+                        className="input-enterprise pl-11 text-sm w-72 !rounded-xl" 
+                      />
+                    </div>
+                    <button onClick={() => exportData("businesses")} className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-gray-100 to-gray-50 dark:from-gray-800 dark:to-gray-900 text-gray-700 dark:text-gray-300 text-sm font-medium flex items-center gap-2 hover:shadow-lg transition-all border border-gray-200 dark:border-gray-700">
+                      <FaDownload className="text-teal-500" /> {t('adminDashboard.users.export')}
+                    </button>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                  {paginate(filterFn(businesses, ["name"])).length === 0 ? (
+                    <div className="col-span-full text-center py-16 card-admin-glass">
+                      <FaBuilding className="text-5xl text-gray-300 dark:text-gray-600 mx-auto mb-4" />
+                      <p className="text-gray-500 dark:text-gray-400 font-medium">No businesses found</p>
+                      <p className="text-gray-400 dark:text-gray-500 text-sm mt-1">Try adjusting your search or filters</p>
+                    </div>
+                  ) : paginate(filterFn(businesses, ["name"])).map((b, idx) => (
+                    <div key={b._id} className="card-admin-glass p-0 overflow-hidden">
+                      {/* Gradient header with status */}
+                      <div className={`h-2 w-full ${b.status === 'active' ? 'bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-500' : 'bg-gradient-to-r from-gray-400 to-gray-500'}`}></div>
+                      <div className="p-5">
+                        <div className="flex justify-between items-start mb-5">
+                          <div className="flex items-center gap-4">
+                            <div className="w-14 h-14 rounded-2xl icon-gradient-teal flex items-center justify-center text-white font-bold text-xl">
+                              {b.name?.charAt(0)}
+                            </div>
+                            <div>
+                              <p className="font-bold text-gray-900 dark:text-white truncate max-w-[180px] text-lg">{b.name}</p>
+                              <span className="inline-flex items-center gap-1.5 text-xs text-gray-500 bg-gray-100 dark:bg-gray-800 px-3 py-1 rounded-full mt-1.5">
+                                <FaBuilding size={10} />{t('specializations.' + b.specialization)}
+                              </span>
+                            </div>
+                          </div>
+                          <button 
+                            onClick={() => toggleStatus(b)} 
+                            className={`px-3 py-1.5 rounded-full text-xs font-bold flex items-center gap-1.5 ${
+                              b.status === 'active' 
+                                ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400' 
+                                : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400'
+
+                            }`}
+                          >
+                            <span className={`w-2 h-2 rounded-full ${b.status === 'active' ? 'bg-emerald-500 animate-pulse' : 'bg-gray-400'}`}></span>
+                            {t(`adminDashboard.statuses.${b.status}`)}
+                          </button>
+                        </div>
+                        
+                        <div className="flex gap-2.5 pt-4 border-t border-gray-100 dark:border-gray-800/50">
+                          <button onClick={() => setViewBusiness(b)} className="flex-1 py-2.5 rounded-xl bg-gradient-to-r from-cyan-500/10 to-blue-500/10 text-cyan-600 dark:text-cyan-400 text-xs font-semibold hover:from-cyan-500/20 hover:to-blue-500/20 transition-all flex items-center justify-center gap-2 border border-cyan-200/50 dark:border-cyan-800/30">
+                            <FaEye /> {t('adminDashboard.common.view')}
+                          </button>
+                          <button onClick={() => { setEditingBusiness(b); setBusinessForm({ name: b.name, email: b.email, status: b.status }); }} className="flex-1 py-2.5 rounded-xl bg-gradient-to-r from-indigo-500/10 to-purple-500/10 text-indigo-600 dark:text-indigo-400 text-xs font-semibold hover:from-indigo-500/20 hover:to-purple-500/20 transition-all flex items-center justify-center gap-2 border border-indigo-200/50 dark:border-indigo-800/30">
+                            <FaEdit /> {t('adminDashboard.common.edit')}
+                          </button>
+                          <button onClick={() => setDeleteConfirm({ t: "business", id: b._id, n: b.name })} className="w-12 py-2.5 rounded-xl bg-gradient-to-r from-red-500/10 to-rose-500/10 text-red-500 text-xs font-semibold hover:from-red-500/20 hover:to-rose-500/20 transition-all flex items-center justify-center border border-red-200/50 dark:border-red-800/30">
+                            <FaTrash />
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {totalPages(filterFn(businesses, ["name"])) > 1 && (
+                  <div className="flex justify-center gap-3 mt-8">
+                    <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1} className="w-12 h-12 rounded-xl card-admin-glass flex items-center justify-center disabled:opacity-40 hover:bg-gray-50 dark:hover:bg-gray-800"><FaChevronLeft className="rtl:rotate-180" /></button>
+                    <span className="flex items-center px-6 font-semibold text-gray-700 dark:text-gray-200 card-admin-glass rounded-xl" dir="ltr">{page} / {totalPages(filterFn(businesses, ["name"]))}</span>
+                    <button onClick={() => setPage(p => p + 1)} disabled={page >= totalPages(filterFn(businesses, ["name"]))} className="w-12 h-12 rounded-xl card-admin-glass flex items-center justify-center disabled:opacity-40 hover:bg-gray-50 dark:hover:bg-gray-800"><FaChevronRight className="rtl:rotate-180" /></button>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {activeTab === "tickets" && (
+              <div className="space-y-6">
+                {!selectedBusiness ? (
+                  <>
+                    {/* Business Selection View */}
+                    <div className="card-admin-glass p-5 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-xl icon-gradient-indigo flex items-center justify-center text-white">
+                          <FaTicketAlt />
+                        </div>
+                        <div>
+                          <h3 className="font-bold text-lg">{t('adminDashboard.tabs.tickets')}</h3>
+                          <p className="text-sm text-gray-500">{t('adminDashboard.businesses.selectBusiness') || 'Select a business to view tickets'}</p>
+                        </div>
+                      </div>
+                      <div className="relative w-full md:w-64">
+                        <FaSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                        <input 
+                          type="text" 
+                          value={search} 
+                          onChange={e => { setSearch(e.target.value); setPage(1); }}
+                          placeholder={t('adminDashboard.businesses.searchPlaceholder') || 'Search businesses...'}
+                          className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm"
+                        />
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+                      {paginate(filterFn(businesses, ["name"])).map(b => (
+                        <button key={b._id} onClick={() => setSelectedBusiness(b)} className="card-admin-glass p-5 text-left hover:border-indigo-300 dark:hover:border-indigo-700 cursor-pointer">
+                          <div className="flex items-center gap-4">
+                            <div className="w-14 h-14 rounded-2xl icon-gradient-indigo flex items-center justify-center text-white font-bold text-xl">
+                              {b.name?.charAt(0)}
+                            </div>
+                            <div className="flex-1 overflow-hidden">
+                              <p className="font-bold text-gray-900 dark:text-white truncate">{b.name}</p>
+                              <p className="text-sm text-gray-500 truncate">{t('specializations.' + b.specialization)}</p>
+                              <p className="text-xs text-indigo-500 mt-1">{tickets.filter(t => t.businessId?._id === b._id).length} tickets</p>
+                            </div>
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                    {totalPages(filterFn(businesses, ["name"])) > 1 && (
+                      <div className="flex justify-center gap-3 mt-6">
+                        <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1} className="w-10 h-10 rounded-xl card-admin-glass flex items-center justify-center disabled:opacity-40"><FaChevronLeft className="rtl:rotate-180" /></button>
+                        <span className="flex items-center px-4 font-semibold text-gray-700 dark:text-gray-200 card-admin-glass rounded-xl" dir="ltr">{page} / {totalPages(filterFn(businesses, ["name"]))}</span>
+                        <button onClick={() => setPage(p => p + 1)} disabled={page >= totalPages(filterFn(businesses, ["name"]))} className="w-10 h-10 rounded-xl card-admin-glass flex items-center justify-center disabled:opacity-40"><FaChevronRight className="rtl:rotate-180" /></button>
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <>
+                    {/* Tickets for Selected Business */}
+                    <div className="card-admin-glass p-5 flex justify-between items-center">
+                      <div className="flex items-center gap-4">
+                        <button onClick={() => setSelectedBusiness(null)} className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800">
+                          <FaChevronLeft />
+                        </button>
+                        <div className="w-10 h-10 rounded-xl icon-gradient-indigo flex items-center justify-center text-white font-bold">
+                          {selectedBusiness.name?.charAt(0)}
+                        </div>
+                        <div>
+                          <h3 className="font-bold text-lg">{selectedBusiness.name}</h3>
+                          <p className="text-sm text-gray-500">{t('specializations.' + selectedBusiness.specialization)}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <select value={filter} onChange={e => setFilter(e.target.value)} className="input-enterprise py-2.5 text-sm w-40 !mt-0 !rounded-xl bg-white/50 dark:bg-gray-800/50">
+                          <option value="all">{t('adminDashboard.tickets.filterAll')}</option>
+                          <option value="waiting">{t('adminDashboard.tickets.filterWaiting')}</option>
+                          <option value="completed">{t('adminDashboard.tickets.filterCompleted')}</option>
+                          <option value="cancelled">{t('adminDashboard.tickets.filterCancelled')}</option>
+                        </select>
+                        <button onClick={() => exportData("tickets")} className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-gray-100 to-gray-50 dark:from-gray-800 dark:to-gray-900 text-gray-700 dark:text-gray-300 text-sm font-medium flex items-center gap-2 border border-gray-200 dark:border-gray-700">
+                          <FaDownload className="text-indigo-500" /> {t('adminDashboard.users.export')}
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="card-admin-glass overflow-hidden !p-0">
+                      <div className="overflow-x-auto">
+                        <table className="admin-table text-sm w-full">
+                          <thead>
+                            <tr className="border-b border-gray-100 dark:border-gray-800">
+                              <th className="text-start p-5 text-xs font-bold text-gray-500 uppercase tracking-wider">#</th>
+                              <th className="text-start p-5 text-xs font-bold text-gray-500 uppercase tracking-wider">{t('adminDashboard.tickets.customer')}</th>
+                              <th className="text-start p-5 text-xs font-bold text-gray-500 uppercase tracking-wider">{t('adminDashboard.users.status')}</th>
+                              <th className="text-start p-5 text-xs font-bold text-gray-500 uppercase tracking-wider">{t('adminDashboard.tickets.date')}</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-gray-50 dark:divide-gray-800">
+                            {tickets.filter(tk => tk.businessId?._id === selectedBusiness._id && (filter === "all" || tk.status === filter)).map(tk => (
+                              <tr key={tk._id} className="hover:bg-emerald-50/30 dark:hover:bg-emerald-900/5">
+                                <td className="p-5">
+                                  <span className="font-mono font-bold text-emerald-600 bg-emerald-50 dark:bg-emerald-900/30 px-3 py-1.5 rounded-lg">#{tk.ticketNumber}</span>
+                                </td>
+                                <td className="p-5">
+                                  <div className="flex items-center gap-2">
+                                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white text-xs font-bold">
+                                      {(tk.userId?.name || tk.guestName || "?").charAt(0)}
+                                    </div>
+                                    <span>{tk.userId?.name || tk.guestName || t('adminDashboard.tickets.guest')}</span>
+                                  </div>
+                                </td>
+                                <td className="p-5">
+                                  <span className={`px-3 py-1.5 rounded-full text-xs font-bold ${statusColor(tk.status)}`}>
+                                    {t(`adminDashboard.statuses.${tk.status}`)}
+                                  </span>
+                                </td>
+                                <td className="p-5 text-gray-500">{new Date(tk.createdAt).toLocaleDateString()}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                        {tickets.filter(tk => tk.businessId?._id === selectedBusiness._id).length === 0 && (
+                          <div className="text-center py-16">
+                            <FaTicketAlt className="text-5xl text-gray-300 dark:text-gray-600 mx-auto mb-4" />
+                            <p className="text-gray-500">No tickets found for this business</p>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </>
+                )}
+              </div>
+            )}
+
+
+            {activeTab === "reviews" && (
+              <div className="space-y-6">
+                {!selectedBusiness ? (
+                  <>
+                    {/* Business Selection View */}
+                    <div className="card-admin-glass p-5 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-xl icon-gradient-amber flex items-center justify-center text-white">
+                          <FaStar />
+                        </div>
+                        <div>
+                          <h3 className="font-bold text-lg">{t('adminDashboard.tabs.reviews')}</h3>
+                          <p className="text-sm text-gray-500">{t('adminDashboard.businesses.selectBusiness') || 'Select a business to view reviews'}</p>
+                        </div>
+                      </div>
+                      <div className="relative w-full md:w-64">
+                        <FaSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                        <input 
+                          type="text" 
+                          value={search} 
+                          onChange={e => { setSearch(e.target.value); setPage(1); }}
+                          placeholder={t('adminDashboard.businesses.searchPlaceholder') || 'Search businesses...'}
+                          className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm"
+                        />
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+                      {paginate(filterFn(businesses, ["name"])).map(b => (
+                        <button key={b._id} onClick={() => setSelectedBusiness(b)} className="card-admin-glass p-5 text-left hover:border-amber-300 dark:hover:border-amber-700 cursor-pointer">
+                          <div className="flex items-center gap-4">
+                            <div className="w-14 h-14 rounded-2xl icon-gradient-amber flex items-center justify-center text-white font-bold text-xl">
+                              {b.name?.charAt(0)}
+                            </div>
+                            <div className="flex-1 overflow-hidden">
+                              <p className="font-bold text-gray-900 dark:text-white truncate">{b.name}</p>
+                              <p className="text-sm text-gray-500 truncate">{t('specializations.' + b.specialization)}</p>
+                              <p className="text-xs text-amber-500 mt-1">{reviews.filter(r => r.businessId?._id === b._id).length} reviews</p>
+                            </div>
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                    {totalPages(filterFn(businesses, ["name"])) > 1 && (
+                      <div className="flex justify-center gap-3 mt-6">
+                        <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1} className="w-10 h-10 rounded-xl card-admin-glass flex items-center justify-center disabled:opacity-40"><FaChevronLeft className="rtl:rotate-180" /></button>
+                        <span className="flex items-center px-4 font-semibold text-gray-700 dark:text-gray-200 card-admin-glass rounded-xl" dir="ltr">{page} / {totalPages(filterFn(businesses, ["name"]))}</span>
+                        <button onClick={() => setPage(p => p + 1)} disabled={page >= totalPages(filterFn(businesses, ["name"]))} className="w-10 h-10 rounded-xl card-admin-glass flex items-center justify-center disabled:opacity-40"><FaChevronRight className="rtl:rotate-180" /></button>
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <>
+                    {/* Reviews for Selected Business */}
+                    <div className="card-admin-glass p-5 flex justify-between items-center">
+                      <div className="flex items-center gap-4">
+                        <button onClick={() => setSelectedBusiness(null)} className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800">
+                          <FaChevronLeft />
+                        </button>
+                        <div className="w-10 h-10 rounded-xl icon-gradient-amber flex items-center justify-center text-white font-bold">
+                          {selectedBusiness.name?.charAt(0)}
+                        </div>
+                        <div>
+                          <h3 className="font-bold text-lg">{selectedBusiness.name}</h3>
+                          <p className="text-sm text-gray-500">{reviews.filter(r => r.businessId?._id === selectedBusiness._id).length} reviews</p>
+                        </div>
+                      </div>
+                      <button onClick={() => exportData("reviews")} className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-gray-100 to-gray-50 dark:from-gray-800 dark:to-gray-900 text-gray-700 dark:text-gray-300 text-sm font-medium flex items-center gap-2 border border-gray-200 dark:border-gray-700">
+                        <FaDownload className="text-amber-500" /> {t('adminDashboard.users.export')}
+                      </button>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                      {reviews.filter(r => r.businessId?._id === selectedBusiness._id).map((r, idx) => (
+                        <div key={r._id} className="card-admin-glass p-0 overflow-hidden flex flex-col justify-between">
+                          <div className="h-1.5 w-full bg-gradient-to-r from-amber-400 via-orange-500 to-amber-400"></div>
+                          <div className="p-5 flex-1">
+                            <div className="flex justify-between items-start mb-4">
+                              <div className="flex items-center gap-3">
+                                <div className="w-12 h-12 rounded-xl icon-gradient-indigo flex items-center justify-center text-white text-lg font-bold">
+                                  {(r.userId?.name || "?").charAt(0)}
+                                </div>
+                                <div>
+                                  <p className="font-bold text-gray-900 dark:text-white">{r.userId?.name || t('adminDashboard.reviews.anonymous')}</p>
+                                  <p className="text-xs text-gray-500">{new Date(r.createdAt).toLocaleDateString()}</p>
+                                </div>
+                              </div>
+                              <div className="flex gap-0.5">
+                                {[...Array(5)].map((_, i) => (
+                                  <FaStar key={i} className={`text-sm ${i < r.rating ? "text-amber-400" : "text-gray-200 dark:text-gray-700"}`} />
+                                ))}
+                              </div>
+                            </div>
+                            <div className="bg-gray-50/80 dark:bg-gray-800/30 p-4 rounded-xl text-sm text-gray-600 dark:text-gray-300 italic">
+                              {r.comment}
+                            </div>
+                          </div>
+                          <div className="flex justify-end p-4 border-t border-gray-100 dark:border-gray-800/50 bg-gray-50/50 dark:bg-gray-800/20">
+                            <button onClick={() => setDeleteConfirm({ t: "review", id: r._id, n: "review" })} className="p-2.5 rounded-xl text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-600">
+                              <FaTrash size={14} />
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                    {reviews.filter(r => r.businessId?._id === selectedBusiness._id).length === 0 && (
+                      <div className="card-admin-glass text-center py-16">
+                        <FaStar className="text-5xl text-gray-300 dark:text-gray-600 mx-auto mb-4" />
+                        <p className="text-gray-500">No reviews found for this business</p>
+                      </div>
+                    )}
+                  </>
+                )}
+              </div>
+            )}
+
+
+
+            {activeTab === "payments" && (
+              <div className="space-y-6">
+                {!selectedBusiness ? (
+                  <>
+                    {/* Business Selection View */}
+                    <div className="card-admin-glass p-5 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-xl icon-gradient-emerald flex items-center justify-center text-white">
+                          <FaCreditCard />
+                        </div>
+                        <div>
+                          <h3 className="font-bold text-lg">{t('adminDashboard.tabs.payments')}</h3>
+                          <p className="text-sm text-gray-500">{t('adminDashboard.businesses.selectBusiness') || 'Select a business to view payments'}</p>
+                        </div>
+                      </div>
+                      <div className="relative w-full md:w-64">
+                        <FaSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                        <input 
+                          type="text" 
+                          value={search} 
+                          onChange={e => { setSearch(e.target.value); setPage(1); }}
+                          placeholder={t('adminDashboard.businesses.searchPlaceholder') || 'Search businesses...'}
+                          className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm"
+                        />
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+                      {paginate(filterFn(businesses, ["name"])).map(b => (
+                        <button key={b._id} onClick={() => setSelectedBusiness(b)} className="card-admin-glass p-5 text-left hover:border-emerald-300 dark:hover:border-emerald-700 cursor-pointer">
+                          <div className="flex items-center gap-4">
+                            <div className="w-14 h-14 rounded-2xl icon-gradient-emerald flex items-center justify-center text-white font-bold text-xl">
+                              {b.name?.charAt(0)}
+                            </div>
+                            <div className="flex-1 overflow-hidden">
+                              <p className="font-bold text-gray-900 dark:text-white truncate">{b.name}</p>
+                              <p className="text-sm text-gray-500 truncate">{t('specializations.' + b.specialization)}</p>
+                              <p className="text-xs text-emerald-500 mt-1">{payments.filter(p => p.businessId?._id === b._id).length} payments</p>
+                            </div>
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                    {totalPages(filterFn(businesses, ["name"])) > 1 && (
+                      <div className="flex justify-center gap-3 mt-6">
+                        <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1} className="w-10 h-10 rounded-xl card-admin-glass flex items-center justify-center disabled:opacity-40"><FaChevronLeft className="rtl:rotate-180" /></button>
+                        <span className="flex items-center px-4 font-semibold text-gray-700 dark:text-gray-200 card-admin-glass rounded-xl" dir="ltr">{page} / {totalPages(filterFn(businesses, ["name"]))}</span>
+                        <button onClick={() => setPage(p => p + 1)} disabled={page >= totalPages(filterFn(businesses, ["name"]))} className="w-10 h-10 rounded-xl card-admin-glass flex items-center justify-center disabled:opacity-40"><FaChevronRight className="rtl:rotate-180" /></button>
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <>
+                    {/* Payments for Selected Business */}
+                    <div className="card-admin-glass p-5 flex justify-between items-center">
+                      <div className="flex items-center gap-4">
+                        <button onClick={() => setSelectedBusiness(null)} className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800">
+                          <FaChevronLeft />
+                        </button>
+                        <div className="w-10 h-10 rounded-xl icon-gradient-emerald flex items-center justify-center text-white font-bold">
+                          {selectedBusiness.name?.charAt(0)}
+                        </div>
+                        <div>
+                          <h3 className="font-bold text-lg">{selectedBusiness.name}</h3>
+                          <p className="text-sm text-gray-500">{payments.filter(p => p.businessId?._id === selectedBusiness._id).length} payments</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="card-admin-glass overflow-hidden !p-0">
+                      <div className="overflow-x-auto">
+                        <table className="admin-table text-sm w-full">
+                          <thead>
+                            <tr className="border-b border-gray-100 dark:border-gray-800">
+                              <th className="text-start p-5 text-xs font-bold text-gray-500 uppercase tracking-wider">#</th>
+                              <th className="text-start p-5 text-xs font-bold text-gray-500 uppercase tracking-wider">{t('adminDashboard.tickets.customer') || 'Customer'}</th>
+                              <th className="text-start p-5 text-xs font-bold text-gray-500 uppercase tracking-wider">{t('adminDashboard.payments.amount')}</th>
+                              <th className="text-start p-5 text-xs font-bold text-gray-500 uppercase tracking-wider">{t('adminDashboard.payments.method')}</th>
+                              <th className="text-start p-5 text-xs font-bold text-gray-500 uppercase tracking-wider">{t('adminDashboard.payments.date')}</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-gray-50 dark:divide-gray-800">
+                            {payments.filter(p => p.businessId?._id === selectedBusiness._id).map(p => (
+                              <tr key={p._id} className="hover:bg-emerald-50/30 dark:hover:bg-emerald-900/5">
+                                <td className="p-5">
+                                  <span className="font-mono font-bold text-gray-600 bg-gray-100 dark:bg-gray-800 px-3 py-1.5 rounded-lg">#{p.ticketNumber}</span>
+                                </td>
+                                <td className="p-5">
+                                  <div className="flex items-center gap-2">
+                                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white text-xs font-bold">
+                                      {(p.userId?.name || p.guestName || "?").charAt(0)}
+                                    </div>
+                                    <div>
+                                      <p className="font-medium text-gray-900 dark:text-white">{p.userId?.name || p.guestName || t('adminDashboard.tickets.guest')}</p>
+                                      {p.userId?.email && <p className="text-xs text-gray-500">{p.userId.email}</p>}
+                                    </div>
+                                  </div>
+                                </td>
+                                <td className="p-5">
+                                  <span className="font-bold text-lg text-emerald-600 dark:text-emerald-400">${p.price || 0}</span>
+                                </td>
+                                <td className="p-5">
+                                  <span className="px-3 py-1.5 rounded-xl bg-gradient-to-r from-indigo-500/10 to-purple-500/10 text-indigo-600 dark:text-indigo-400 text-xs font-semibold border border-indigo-200/50 dark:border-indigo-800/30">
+                                    {p.paymentMethod}
+                                  </span>
+                                </td>
+                                <td className="p-5 text-gray-500">{new Date(p.createdAt).toLocaleDateString()}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                        {payments.filter(p => p.businessId?._id === selectedBusiness._id).length === 0 && (
+                          <div className="text-center py-16">
+                            <FaCreditCard className="text-5xl text-gray-300 dark:text-gray-600 mx-auto mb-4" />
+                            <p className="text-gray-500">No payments found for this business</p>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </>
+                )}
+              </div>
+            )}
+
+
+            {activeTab === "subscriptions" && (
+              <div className="space-y-6">
+                {/* Stats Cards */}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-5">
+                  {[
+                    { l: t('adminDashboard.subscriptions.stats.total'), v: subStats.total, gradient: "from-gray-400 to-gray-600", i: FaCircle }, 
+                    { l: t('adminDashboard.subscriptions.stats.active'), v: subStats.active, gradient: "from-emerald-400 to-teal-600", i: FaCheckCircle }, 
+                    { l: t('adminDashboard.subscriptions.stats.trial'), v: subStats.trial, gradient: "from-blue-400 to-indigo-600", i: FaClock }, 
+                    { l: t('adminDashboard.subscriptions.stats.inactive'), v: subStats.inactive, gradient: "from-gray-300 to-gray-500", i: FaTimesCircle }
+                  ].map((s, i) => (
+                    <div key={i} className={`card-admin-glass p-5`}>
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <p className="text-3xl font-bold text-gray-900 dark:text-white">{s.v || 0}</p>
+                          <p className="text-xs text-gray-500 font-semibold uppercase tracking-wider mt-1">{s.l}</p>
+                        </div>
+                        <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${s.gradient} flex items-center justify-center text-white`}>
+                          <s.i className="text-xl" />
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                
+                {/* Search Bar */}
+                <div className="card-admin-glass p-5 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                  <span className="font-semibold text-gray-700 dark:text-gray-200">{subs.length} {t('adminDashboard.tabs.subscriptions')}</span>
+                  <div className="relative w-full md:w-64">
+                    <FaSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                    <input 
+                      type="text" 
+                      value={search} 
+                      onChange={e => { setSearch(e.target.value); setPage(1); }}
+                      placeholder={t('adminDashboard.businesses.searchPlaceholder') || 'Search businesses...'}
+                      className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm"
+                    />
+                  </div>
+                </div>
+                
+                {/* Subscriptions Table */}
+                <div className="card-admin-glass overflow-hidden !p-0">
+                  <div className="overflow-x-auto">
+                    <table className="admin-table text-sm w-full">
+                      <thead>
+                        <tr className="border-b border-gray-100 dark:border-gray-800">
+                          <th className="text-start p-5 text-xs font-bold text-gray-500 uppercase tracking-wider">{t('adminDashboard.subscriptions.business')}</th>
+                          <th className="text-start p-5 text-xs font-bold text-gray-500 uppercase tracking-wider">{t('adminDashboard.subscriptions.plan')}</th>
+                          <th className="text-start p-5 text-xs font-bold text-gray-500 uppercase tracking-wider">{t('adminDashboard.subscriptions.status')}</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-gray-50 dark:divide-gray-800">
+                        {paginate(subs.filter(s => !search || s.businessName?.toLowerCase().includes(search.toLowerCase()))).map(s => (
+                          <tr key={s._id} className="hover:bg-emerald-50/30 dark:hover:bg-emerald-900/5">
+                            <td className="p-5">
+                              <div className="flex items-center gap-3">
+                                <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white text-xs font-bold">
+                                  {(s.businessName || "?").charAt(0)}
+                                </div>
+                                <span className="font-medium">{s.businessName}</span>
+                              </div>
+                            </td>
+                            <td className="p-5"><span className="px-3 py-1.5 rounded-xl bg-gradient-to-r from-indigo-500/10 to-purple-500/10 text-indigo-600 dark:text-indigo-400 text-xs font-bold uppercase border border-indigo-200/50 dark:border-indigo-800/30">{s.plan}</span></td>
+                            <td className="p-5"><span className={`px-3 py-1.5 rounded-full text-xs font-bold ${statusColor(s.status)}`}>{t(`adminDashboard.statuses.${s.status}`)}</span></td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+                
+                {/* Pagination */}
+                {totalPages(subs.filter(s => !search || s.businessName?.toLowerCase().includes(search.toLowerCase()))) > 1 && (
+                  <div className="flex justify-center gap-3">
+                    <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1} className="w-10 h-10 rounded-xl card-admin-glass flex items-center justify-center disabled:opacity-40"><FaChevronLeft className="rtl:rotate-180" /></button>
+                    <span className="flex items-center px-4 font-semibold text-gray-700 dark:text-gray-200 card-admin-glass rounded-xl" dir="ltr">{page} / {totalPages(subs.filter(s => !search || s.businessName?.toLowerCase().includes(search.toLowerCase())))}</span>
+                    <button onClick={() => setPage(p => p + 1)} disabled={page >= totalPages(subs.filter(s => !search || s.businessName?.toLowerCase().includes(search.toLowerCase())))} className="w-10 h-10 rounded-xl card-admin-glass flex items-center justify-center disabled:opacity-40"><FaChevronRight className="rtl:rotate-180" /></button>
+                  </div>
+                )}
+              </div>
+            )}
+
+
+
+            {activeTab === "queues" && (
+              <div className="space-y-6">
+                {!selectedBusiness ? (
+                  <>
+                    {/* Business Selection View */}
+                    <div className="card-admin-glass p-5 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-xl icon-gradient-indigo flex items-center justify-center text-white">
+                          <FaClock />
+                        </div>
+                        <div>
+                          <h3 className="font-bold text-lg">{t('adminDashboard.tabs.queueMonitor')}</h3>
+                          <p className="text-sm text-gray-500">{t('adminDashboard.businesses.selectBusiness') || 'Select a business to view queue'}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-4">
+                        <div className="relative w-full md:w-64">
+                          <FaSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                          <input 
+                            type="text" 
+                            value={search} 
+                            onChange={e => { setSearch(e.target.value); setPage(1); }}
+                            placeholder={t('adminDashboard.businesses.searchPlaceholder') || 'Search businesses...'}
+                            className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm"
+                          />
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="relative flex h-3 w-3">
+                            <span className="relative inline-flex rounded-full h-3 w-3 bg-blue-500"></span>
+                          </span>
+                          <span className="text-sm text-blue-600 dark:text-blue-400 font-medium">{t('adminDashboard.queues.liveStatus')}</span>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+                      {paginate(filterFn(businesses, ["name"])).map(b => {
+                        const queue = queues.find(q => q.businessId === b._id || q.businessName === b.name);
+                        return (
+                          <button key={b._id} onClick={() => setSelectedBusiness(b)} className="card-admin-glass p-5 text-left hover:border-indigo-300 dark:hover:border-indigo-700 cursor-pointer">
+                            <div className="flex items-center gap-4">
+                              <div className="w-14 h-14 rounded-2xl icon-gradient-indigo flex items-center justify-center text-white font-bold text-xl">
+                                {b.name?.charAt(0)}
+                              </div>
+                              <div className="flex-1 overflow-hidden">
+                                <p className="font-bold text-gray-900 dark:text-white truncate">{b.name}</p>
+                                <p className="text-sm text-gray-500 truncate">{t('specializations.' + b.specialization)}</p>
+                                <p className="text-xs text-indigo-500 mt-1">
+                                  {queue ? `${queue.waiting || 0} waiting` : 'No active queue'}
+                                </p>
+                              </div>
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
+                    {totalPages(filterFn(businesses, ["name"])) > 1 && (
+                      <div className="flex justify-center gap-3 mt-6">
+                        <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1} className="w-10 h-10 rounded-xl card-admin-glass flex items-center justify-center disabled:opacity-40"><FaChevronLeft className="rtl:rotate-180" /></button>
+                        <span className="flex items-center px-4 font-semibold text-gray-700 dark:text-gray-200 card-admin-glass rounded-xl" dir="ltr">{page} / {totalPages(filterFn(businesses, ["name"]))}</span>
+                        <button onClick={() => setPage(p => p + 1)} disabled={page >= totalPages(filterFn(businesses, ["name"]))} className="w-10 h-10 rounded-xl card-admin-glass flex items-center justify-center disabled:opacity-40"><FaChevronRight className="rtl:rotate-180" /></button>
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <>
+                    {/* Queue for Selected Business */}
+                    <div className="card-admin-glass p-5 flex justify-between items-center">
+                      <div className="flex items-center gap-4">
+                        <button onClick={() => setSelectedBusiness(null)} className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800">
+                          <FaChevronLeft />
+                        </button>
+                        <div className="w-10 h-10 rounded-xl icon-gradient-indigo flex items-center justify-center text-white font-bold">
+                          {selectedBusiness.name?.charAt(0)}
+                        </div>
+                        <div>
+                          <h3 className="font-bold text-lg">{selectedBusiness.name}</h3>
+                          <p className="text-sm text-gray-500">{t('specializations.' + selectedBusiness.specialization)}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="relative flex h-3 w-3">
+                          <span className="relative inline-flex rounded-full h-3 w-3 bg-blue-500"></span>
+                        </span>
+                        <span className="text-sm text-blue-600 dark:text-blue-400 font-medium">{t('adminDashboard.queues.liveStatus')}</span>
+                      </div>
+                    </div>
+
+                    {(() => {
+                      const queue = queues.find(q => q.businessId === selectedBusiness._id || q.businessName === selectedBusiness.name);
+                      if (!queue) {
+                        return (
+                          <div className="card-admin-glass text-center py-20">
+                            <div className="w-20 h-20 bg-gray-100 dark:bg-gray-800 rounded-2xl flex items-center justify-center mx-auto mb-6">
+                              <FaClock className="text-gray-400 text-3xl" />
+                            </div>
+                            <p className="text-gray-500 font-semibold text-lg">{t('adminDashboard.queues.noActiveQueues')}</p>
+                          </div>
+                        );
+                      }
+                      return (
+                        <div className="card-admin-glass p-0 overflow-hidden">
+                          <div className="h-2 w-full bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500"></div>
+                          <div className="p-6">
+                            <div className="flex justify-between items-center mb-6">
+                              <span className={`px-4 py-2 rounded-full text-sm font-bold uppercase tracking-wider ${statusColor(queue.status)}`}>
+                                {t(`adminDashboard.statuses.${queue.status}`)}
+                              </span>
+                            </div>
+                            <div className="grid grid-cols-2 gap-6 mb-6">
+                              <div className="text-center p-6 bg-amber-50 dark:bg-amber-900/20 rounded-2xl">
+                                <p className="text-5xl font-bold text-amber-500">{queue.waiting}</p>
+                                <p className="text-sm uppercase font-bold text-gray-400 tracking-wider mt-2">{t('adminDashboard.queues.waiting')}</p>
+                              </div>
+                              <div className="text-center p-6 bg-emerald-50 dark:bg-emerald-900/20 rounded-2xl">
+                                <p className="text-5xl font-bold text-emerald-500">{queue.serving}</p>
+                                <p className="text-sm uppercase font-bold text-gray-400 tracking-wider mt-2">{t('adminDashboard.queues.serving')}</p>
+                              </div>
+                            </div>
+                            <div className="h-3 w-full bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
+                              <div className="h-full bg-gradient-to-r from-emerald-500 to-teal-500 rounded-full" style={{ width: `${Math.min(((queue.serving + queue.waiting) / 20) * 100, 100)}%` }}></div>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })()}
+                  </>
+                )}
+              </div>
+            )}
+
+
+            {activeTab === "admins" && (
+              <div className="space-y-6">
+                <div className="card-admin-glass p-5 flex justify-between items-center">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl icon-gradient-emerald flex items-center justify-center text-white">
+                      <FaUserShield />
+                    </div>
+                    <h3 className="font-bold text-lg">{t('adminDashboard.sidebar.adminRole')}</h3>
+                  </div>
+                  <button onClick={() => setShowCreateAdmin(true)} className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 text-white text-sm font-semibold flex items-center gap-2">
+                    <FaPlus /> {t('adminDashboard.admins.addAdmin')}
+                  </button>
+                </div>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                  {admins.map((a, idx) => (
+                    <div key={a._id} className="card-admin-glass p-0 overflow-hidden">
+                      <div className="h-1.5 w-full bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-500"></div>
+                      <div className="p-5 flex items-center gap-4">
+                        <div className="w-16 h-16 rounded-2xl bg-gray-100 dark:bg-gray-800 flex items-center justify-center border-2 border-emerald-500 p-1">
+                          <div className="w-full h-full rounded-xl icon-gradient-emerald flex items-center justify-center text-white text-2xl">
+                            <FaUserShield />
+                          </div>
+                        </div>
+                        <div className="overflow-hidden flex-1">
+                          <p className="font-bold text-lg text-gray-900 dark:text-white truncate">{a.name}</p>
+                          <p className="text-sm text-gray-500 truncate">{a.email}</p>
+                          <span className="inline-flex mt-2 items-center gap-1.5 text-xs font-bold text-emerald-600 bg-emerald-100 dark:bg-emerald-900/30 px-3 py-1 rounded-full uppercase tracking-wider">
+                            <FaCheckCircle size={10} /> Active
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
           </main>
         </div>
 
-        {editingUser && <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"><div className="bg-white dark:bg-gray-900 rounded-xl p-6 w-full max-w-md"><h2 className="font-bold mb-4">{t('adminDashboard.users.edit')}</h2><div className="space-y-3"><input value={editForm.name} onChange={e => setEditForm(p => ({ ...p, name: e.target.value }))} placeholder={t('adminDashboard.admins.namePlaceholder')} className="input-enterprise" /><input value={editForm.email} onChange={e => setEditForm(p => ({ ...p, email: e.target.value }))} placeholder={t('adminDashboard.admins.emailPlaceholder')} className="input-enterprise" /></div><div className="flex gap-3 mt-4"><button onClick={updateUser} disabled={submitting} className="flex-1 btn-primary">{submitting ? "..." : t('adminDashboard.common.update')}</button><button onClick={() => setEditingUser(null)} className="flex-1 btn-secondary">{t('adminDashboard.common.cancel')}</button></div></div></div>}
-        {editingBusiness && <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"><div className="bg-white dark:bg-gray-900 rounded-xl p-6 w-full max-w-md"><h2 className="font-bold mb-4">{t('adminDashboard.modals.editBusiness')}</h2><div className="space-y-3"><input value={businessForm.name} onChange={e => setBusinessForm(p => ({ ...p, name: e.target.value }))} placeholder={t('adminDashboard.admins.namePlaceholder')} className="input-enterprise" /><select value={businessForm.status} onChange={e => setBusinessForm(p => ({ ...p, status: e.target.value }))} className="input-enterprise"><option value="active">{t('common.active')}</option><option value="inactive">{t('common.inactive')}</option></select></div><div className="flex gap-3 mt-4"><button onClick={updateBusiness} disabled={submitting} className="flex-1 btn-primary">{submitting ? "..." : t('adminDashboard.common.update')}</button><button onClick={() => setEditingBusiness(null)} className="flex-1 btn-secondary">{t('adminDashboard.common.cancel')}</button></div></div></div>}
-        {viewBusiness && <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"><div className="bg-white dark:bg-gray-900 rounded-xl p-6 w-full max-w-lg max-h-[80vh] overflow-y-auto"><div className="flex justify-between mb-4"><h2 className="font-bold">{viewBusiness.name}</h2><button onClick={() => setViewBusiness(null)}><FaTimes /></button></div><div className="grid grid-cols-2 gap-3 text-sm">{[{ l: t('adminDashboard.users.status'), v: t(`adminDashboard.statuses.${viewBusiness.status}`) }, { l: t('adminDashboard.categories.category'), v: viewBusiness.specialization }, { l: t('adminDashboard.admins.emailPlaceholder').replace(' *', ''), v: viewBusiness.email }, { l: t('contact.form.phone'), v: viewBusiness.mobilePhone }].map((f, i) => <div key={i} className="p-3 bg-gray-100 dark:bg-gray-800 rounded"><p className="text-gray-500 text-xs">{f.l}</p><p>{f.v || "N/A"}</p></div>)}</div>{viewBusiness.service?.length > 0 && <div className="mt-4"><p className="font-medium mb-2">{t('homePage.services')}</p>{viewBusiness.service.map((s, i) => <div key={i} className="flex justify-between p-2 bg-gray-100 dark:bg-gray-800 rounded mb-1 text-sm"><span>{s.name}</span><span className="font-bold">{s.price} EGP</span></div>)}</div>}</div></div>}
-        {deleteConfirm && <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"><div className="bg-white dark:bg-gray-900 rounded-xl p-6 w-full max-w-sm text-center"><FaTrash className="text-red-500 text-3xl mx-auto mb-4" /><p className="mb-4">{t('adminDashboard.common.deleteConfirm', { name: deleteConfirm.n })}</p><div className="flex gap-3"><button onClick={() => { if (deleteConfirm.t === "user") deleteUser(deleteConfirm.id); else if (deleteConfirm.t === "business") deleteBusiness(deleteConfirm.id); else deleteReview(deleteConfirm.id); }} disabled={submitting} className="flex-1 btn-danger">{submitting ? "..." : t('adminDashboard.users.delete')}</button><button onClick={() => setDeleteConfirm(null)} className="flex-1 btn-secondary">{t('adminDashboard.common.cancel')}</button></div></div></div>}
-        {showCreateAdmin && <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"><div className="bg-white dark:bg-gray-900 rounded-xl p-6 w-full max-w-md"><h2 className="font-bold mb-4">{t('adminDashboard.admins.createTitle')}</h2><div className="space-y-3"><input value={newAdmin.name} onChange={e => setNewAdmin(p => ({ ...p, name: e.target.value }))} placeholder={t('adminDashboard.admins.namePlaceholder')} className="input-enterprise" /><input value={newAdmin.email} onChange={e => setNewAdmin(p => ({ ...p, email: e.target.value }))} placeholder={t('adminDashboard.admins.emailPlaceholder')} className="input-enterprise" /><input type="password" value={newAdmin.password} onChange={e => setNewAdmin(p => ({ ...p, password: e.target.value }))} placeholder={t('adminDashboard.admins.passwordPlaceholder')} className="input-enterprise" /></div><div className="flex gap-3 mt-4"><button onClick={createAdmin} disabled={submitting} className="flex-1 btn-primary">{submitting ? "..." : t('adminDashboard.common.create')}</button><button onClick={() => setShowCreateAdmin(false)} className="flex-1 btn-secondary">{t('adminDashboard.common.cancel')}</button></div></div></div>}
-        {showAnnouncement && <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"><div className="bg-white dark:bg-gray-900 rounded-xl p-6 w-full max-w-md"><h2 className="font-bold mb-4 flex items-center gap-2"><FaBullhorn className="text-indigo-500" /> {t('adminDashboard.announcement.title')}</h2><div className="space-y-3"><input value={announcement.title} onChange={e => setAnnouncement(p => ({ ...p, title: e.target.value }))} placeholder={t('adminDashboard.announcement.titlePlaceholder')} className="input-enterprise" /><textarea value={announcement.message} onChange={e => setAnnouncement(p => ({ ...p, message: e.target.value }))} placeholder={t('adminDashboard.announcement.messagePlaceholder')} rows={3} className="input-enterprise" /><select value={announcement.targetAudience} onChange={e => setAnnouncement(p => ({ ...p, targetAudience: e.target.value }))} className="input-enterprise"><option value="all">{t('adminDashboard.announcement.targetAll')}</option><option value="users">{t('adminDashboard.announcement.targetUsers')}</option><option value="owners">{t('adminDashboard.announcement.targetOwners')}</option></select></div><div className="flex gap-3 mt-4"><button onClick={sendAnnouncement} disabled={submitting} className="flex-1 btn-primary">{submitting ? "..." : t('adminDashboard.announcement.send')}</button><button onClick={() => setShowAnnouncement(false)} className="flex-1 btn-secondary">{t('adminDashboard.common.cancel')}</button></div></div></div>}
-        {toast && <div className="fixed bottom-4 right-4 z-50"><div className={`px-4 py-3 rounded shadow-xl flex items-center gap-2 ${toast.type === "success" ? "bg-emerald-500" : "bg-red-500"} text-white`}>{toast.type === "success" ? <FaCheckCircle /> : <FaTimesCircle />}{toast.message}</div></div>}
+        {/* Modals with glass-morphism */}
+        {editingUser && <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4"><div className="modal-glass w-full max-w-md"><div className="p-6"><div className="flex items-center gap-3 mb-6"><div className="w-12 h-12 rounded-xl icon-gradient-emerald flex items-center justify-center text-white text-xl"><FaEdit /></div><h2 className="font-bold text-xl">{t('adminDashboard.users.edit')}</h2></div><div className="space-y-4"><input value={editForm.name} onChange={e => setEditForm(p => ({ ...p, name: e.target.value }))} placeholder={t('adminDashboard.admins.namePlaceholder')} className="input-enterprise !rounded-xl" /><input value={editForm.email} onChange={e => setEditForm(p => ({ ...p, email: e.target.value }))} placeholder={t('adminDashboard.admins.emailPlaceholder')} className="input-enterprise !rounded-xl" /></div><div className="flex gap-3 mt-6"><button onClick={updateUser} disabled={submitting} className="flex-1 px-4 py-3 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 text-white font-semibold hover:shadow-lg hover:shadow-emerald-500/30 transition-all">{submitting ? "..." : t('adminDashboard.common.update')}</button><button onClick={() => setEditingUser(null)} className="flex-1 px-4 py-3 rounded-xl bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 font-semibold hover:bg-gray-200 dark:hover:bg-gray-700 transition-all">{t('adminDashboard.common.cancel')}</button></div></div></div></div>}
+        {editingBusiness && <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4"><div className="modal-glass w-full max-w-md"><div className="p-6"><div className="flex items-center gap-3 mb-6"><div className="w-12 h-12 rounded-xl icon-gradient-teal flex items-center justify-center text-white text-xl"><FaBuilding /></div><h2 className="font-bold text-xl">{t('adminDashboard.modals.editBusiness')}</h2></div><div className="space-y-4"><input value={businessForm.name} onChange={e => setBusinessForm(p => ({ ...p, name: e.target.value }))} placeholder={t('adminDashboard.admins.namePlaceholder')} className="input-enterprise !rounded-xl" /><select value={businessForm.status} onChange={e => setBusinessForm(p => ({ ...p, status: e.target.value }))} className="input-enterprise !rounded-xl"><option value="active">{t('common.active')}</option><option value="inactive">{t('common.inactive')}</option></select></div><div className="flex gap-3 mt-6"><button onClick={updateBusiness} disabled={submitting} className="flex-1 px-4 py-3 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 text-white font-semibold hover:shadow-lg hover:shadow-emerald-500/30 transition-all">{submitting ? "..." : t('adminDashboard.common.update')}</button><button onClick={() => setEditingBusiness(null)} className="flex-1 px-4 py-3 rounded-xl bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 font-semibold hover:bg-gray-200 dark:hover:bg-gray-700 transition-all">{t('adminDashboard.common.cancel')}</button></div></div></div></div>}
+        {viewBusiness && <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4"><div className="modal-glass w-full max-w-lg max-h-[80vh] overflow-y-auto"><div className="p-6"><div className="flex justify-between items-start mb-6"><div className="flex items-center gap-3"><div className="w-14 h-14 rounded-xl icon-gradient-teal flex items-center justify-center text-white text-2xl font-bold">{viewBusiness.name?.charAt(0)}</div><div><h2 className="font-bold text-xl">{viewBusiness.name}</h2><span className={`inline-flex mt-1 px-2.5 py-1 rounded-full text-xs font-bold ${statusColor(viewBusiness.status)}`}>{t(`adminDashboard.statuses.${viewBusiness.status}`)}</span></div></div><button onClick={() => setViewBusiness(null)} className="p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"><FaTimes /></button></div><div className="grid grid-cols-2 gap-4 text-sm">{[{ l: t('adminDashboard.categories.category'), v: viewBusiness.specialization }, { l: t('adminDashboard.admins.emailPlaceholder').replace(' *', ''), v: viewBusiness.email }, { l: t('contact.form.phone'), v: viewBusiness.mobilePhone }].map((f, i) => <div key={i} className="p-4 bg-gray-50/80 dark:bg-gray-800/30 rounded-xl border border-gray-100 dark:border-gray-800/50"><p className="text-gray-500 text-xs font-semibold uppercase tracking-wider mb-1">{f.l}</p><p className="font-medium">{f.v || "N/A"}</p></div>)}</div>{viewBusiness.service?.length > 0 && <div className="mt-6"><p className="font-bold mb-3">{t('homePage.services')}</p>{viewBusiness.service.map((s, i) => <div key={i} className="flex justify-between p-3 bg-gray-50/80 dark:bg-gray-800/30 rounded-xl mb-2 text-sm border border-gray-100 dark:border-gray-800/50"><span className="font-medium">{s.name}</span><span className="font-bold text-emerald-600">{s.price} EGP</span></div>)}</div>}</div></div></div>}
+        {deleteConfirm && <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4"><div className="modal-glass w-full max-w-sm"><div className="p-6 text-center"><div className="w-20 h-20 rounded-2xl bg-red-100 dark:bg-red-900/30 flex items-center justify-center mx-auto mb-6"><FaTrash className="text-red-500 text-3xl" /></div><p className="text-lg font-medium mb-6">{t('adminDashboard.common.deleteConfirm', { name: deleteConfirm.n })}</p><div className="flex gap-3"><button onClick={() => { if (deleteConfirm.t === "user") deleteUser(deleteConfirm.id); else if (deleteConfirm.t === "business") deleteBusiness(deleteConfirm.id); else deleteReview(deleteConfirm.id); }} disabled={submitting} className="flex-1 px-4 py-3 rounded-xl bg-gradient-to-r from-red-500 to-rose-600 text-white font-semibold hover:shadow-lg hover:shadow-red-500/30 transition-all">{submitting ? "..." : t('adminDashboard.users.delete')}</button><button onClick={() => setDeleteConfirm(null)} className="flex-1 px-4 py-3 rounded-xl bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 font-semibold hover:bg-gray-200 dark:hover:bg-gray-700 transition-all">{t('adminDashboard.common.cancel')}</button></div></div></div></div>}
+        {showCreateAdmin && <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4"><div className="modal-glass w-full max-w-md"><div className="p-6"><div className="flex items-center gap-3 mb-6"><div className="w-12 h-12 rounded-xl icon-gradient-emerald flex items-center justify-center text-white text-xl"><FaUserShield /></div><h2 className="font-bold text-xl">{t('adminDashboard.admins.createTitle')}</h2></div><div className="space-y-4"><input value={newAdmin.name} onChange={e => setNewAdmin(p => ({ ...p, name: e.target.value }))} placeholder={t('adminDashboard.admins.namePlaceholder')} className="input-enterprise !rounded-xl" /><input value={newAdmin.email} onChange={e => setNewAdmin(p => ({ ...p, email: e.target.value }))} placeholder={t('adminDashboard.admins.emailPlaceholder')} className="input-enterprise !rounded-xl" /><input type="password" value={newAdmin.password} onChange={e => setNewAdmin(p => ({ ...p, password: e.target.value }))} placeholder={t('adminDashboard.admins.passwordPlaceholder')} className="input-enterprise !rounded-xl" /></div><div className="flex gap-3 mt-6"><button onClick={createAdmin} disabled={submitting} className="flex-1 px-4 py-3 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 text-white font-semibold hover:shadow-lg hover:shadow-emerald-500/30 transition-all">{submitting ? "..." : t('adminDashboard.common.create')}</button><button onClick={() => setShowCreateAdmin(false)} className="flex-1 px-4 py-3 rounded-xl bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 font-semibold hover:bg-gray-200 dark:hover:bg-gray-700 transition-all">{t('adminDashboard.common.cancel')}</button></div></div></div></div>}
+        {showAnnouncement && <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4"><div className="modal-glass w-full max-w-md"><div className="p-6"><div className="flex items-center gap-3 mb-6"><div className="w-12 h-12 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white text-xl"><FaBullhorn /></div><h2 className="font-bold text-xl">{t('adminDashboard.announcement.title')}</h2></div><div className="space-y-4"><input value={announcement.title} onChange={e => setAnnouncement(p => ({ ...p, title: e.target.value }))} placeholder={t('adminDashboard.announcement.titlePlaceholder')} className="input-enterprise !rounded-xl" /><textarea value={announcement.message} onChange={e => setAnnouncement(p => ({ ...p, message: e.target.value }))} placeholder={t('adminDashboard.announcement.messagePlaceholder')} rows={3} className="input-enterprise !rounded-xl" /><select value={announcement.targetAudience} onChange={e => setAnnouncement(p => ({ ...p, targetAudience: e.target.value }))} className="input-enterprise !rounded-xl"><option value="all">{t('adminDashboard.announcement.targetAll')}</option><option value="users">{t('adminDashboard.announcement.targetUsers')}</option><option value="owners">{t('adminDashboard.announcement.targetOwners')}</option></select></div><div className="flex gap-3 mt-6"><button onClick={sendAnnouncement} disabled={submitting} className="flex-1 px-4 py-3 rounded-xl bg-gradient-to-r from-indigo-500 to-purple-600 text-white font-semibold hover:shadow-lg hover:shadow-indigo-500/30 transition-all">{submitting ? "..." : t('adminDashboard.announcement.send')}</button><button onClick={() => setShowAnnouncement(false)} className="flex-1 px-4 py-3 rounded-xl bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 font-semibold hover:bg-gray-200 dark:hover:bg-gray-700 transition-all">{t('adminDashboard.common.cancel')}</button></div></div></div></div>}
+        {toast && <div className="fixed bottom-6 right-6 z-50 animate-fade-in"><div className={`px-5 py-4 rounded-2xl shadow-2xl flex items-center gap-3 ${toast.type === "success" ? "bg-gradient-to-r from-emerald-500 to-teal-600" : "bg-gradient-to-r from-red-500 to-rose-600"} text-white font-medium`}>{toast.type === "success" ? <FaCheckCircle className="text-xl" /> : <FaTimesCircle className="text-xl" />}{toast.message}</div></div>}
+
       </div>
     </ProtectedRoute>
   );

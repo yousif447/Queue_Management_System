@@ -1,9 +1,9 @@
 "use client";
 
-import { Languages, ChevronDown } from 'lucide-react';
+import { ChevronDown, Languages } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
-export default function LanguageSwitcher() {
+export default function LanguageSwitcher({ dropUp = false }) {
   const [locale, setLocale] = useState('en');
   const [isOpen, setIsOpen] = useState(false);
 
@@ -43,7 +43,7 @@ export default function LanguageSwitcher() {
       {isOpen && (
         <>
           <div className="fixed inset-0 z-40" onClick={() => setIsOpen(false)} />
-          <div className="absolute ltr:right-0 rtl:left-0 mt-2 w-48 bg-white dark:bg-gray-900 rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-700/50 z-50 overflow-hidden animate-fade-in-scale">
+          <div className={`absolute ltr:right-0 rtl:left-0 w-48 bg-white dark:bg-gray-900 rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-700/50 z-50 overflow-hidden animate-fade-in-scale ${dropUp ? 'bottom-full mb-2' : 'mt-2'}`}>
             <div className="p-2">
               <button
                 onClick={() => changeLanguage('en')}
