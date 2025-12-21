@@ -98,10 +98,29 @@ const socketHandler = (io) => {
     // JOIN USER'S PERSONAL ROOM (for notifications)
     // =========================================
     socket.on("joinUserRoom", (data) => {
-      const { userId } = data;
+      // DEBUG: Echo back to client
+      let parsedData = data;
+      if (typeof data === 'string') {
+          try {
+              parsedData = JSON.parse(data);
+          } catch (e) {
+              // ignore
+          }
+      }
+
+      socket.emit("debug_error", { 
+          source: "server_received", 
+          dataType: typeof data, 
+          dataContent: parsedData || data 
+      });
+
+      const { userId } = parsedData || {};
       
       if (!userId) {
-        socket.emit("error", { message: "userId is required for personal room" });
+        socket.emit("error", { 
+            message: "userId is required for personal room", 
+            debug: { received: parsedData, originalType: typeof data } 
+        });
         return;
       }
 
