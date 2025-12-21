@@ -233,6 +233,13 @@ exports.updateUserById = async (req, res) => {
   try {
     const { id } = req.params;
 
+
+
+    // Sanitize input: empty phone should be null to avoid validation error
+    if (req.body.phone === "") {
+      req.body.phone = null;
+    }
+
     let updatedUser = await Users.findByIdAndUpdate(id, req.body, {
       new: true,
       runValidators: true
@@ -261,6 +268,12 @@ exports.updateUserById = async (req, res) => {
       user: updatedUser,
     });
   } catch (err) {
+    if (err.name === 'ValidationError') {
+      return res.status(400).json({ status: "fail", message: err.message });
+    }
+    if (err.code === 11000) {
+      return res.status(400).json({ status: "fail", message: "Duplicate field value: " + JSON.stringify(err.keyValue) });
+    }
     res.status(500).json({
       status: "error",
       message: err.message,
@@ -443,6 +456,7 @@ exports.createAdmin = async (req, res) => {
     }
 
     // Create new admin in Admin schema
+    console.log(`Creating admin: ${email}, password length: ${password?.length}`);
     const newAdmin = await Admin.create({
       name,
       email,
