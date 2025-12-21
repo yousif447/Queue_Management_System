@@ -1,6 +1,5 @@
 "use client";
 import FormField from '@/components/BusinessRegister/FormField';
-import QueueSettingsSection from '@/components/BusinessRegister/QueueSettingsSection';
 import ServiceSection from '@/components/BusinessRegister/ServiceSection';
 import WorkingTimeSection from '@/components/BusinessRegister/WorkingTimeSection';
 import ProfilePhotoUpload from '@/components/ProfilePhotoUpload';
@@ -8,15 +7,15 @@ import { Button } from '@/components/ui/button';
 import { Label } from "@/components/ui/label";
 import { useTranslations } from '@/hooks/useTranslations';
 import { API_URL, authFetch } from '@/lib/api';
+import { AlertCircle, Building2, Wallet } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import toast from 'react-hot-toast';
-import { FaBriefcase, FaCreditCard, FaMapMarkerAlt, FaPhone } from "react-icons/fa";
+import { FaBriefcase, FaMapMarkerAlt, FaPhone } from "react-icons/fa";
 import { IoPersonOutline } from "react-icons/io5";
 import { MdOutlineMailLock } from "react-icons/md";
 import { RiLockPasswordLine } from "react-icons/ri";
-import { AlertCircle } from 'lucide-react';
 
 export default function Page() {
   const router = useRouter();
@@ -34,8 +33,8 @@ export default function Page() {
     specialization: '',
     profileImage: '',
     businessImages: '',
-    workingHours: { days: [], openTime: '', closeTime: ''},
-    service: { name: '', description: '', price: '', duration: ''},
+    workingHours: { days: [], openTime: '', closeTime: '', lastTimeToAppoint: ''},
+    services: [{ name: '', description: '', price: '', duration: '' }],
     queueSettings: { maxPatientsPerDay: '', lastTimeToAppoint: ''}
   });
 
@@ -74,26 +73,18 @@ export default function Page() {
     const { name, value, type, checked } = e.target;
     
     // Handle working hours nested fields
-    if (name === 'openTime' || name === 'closeTime') {
-      setBusiness({
-        ...business,
-        workingHours: { ...business.workingHours, [name]: value }
-      });
-    }
-    // Handle service nested fields
-    else if (name === 'serviceName' || name === 'serviceDescription' || name === 'servicePrice' || name === 'serviceDuration') {
-      const fieldName = name.replace('service', '').charAt(0).toLowerCase() + name.replace('service', '').slice(1);
-      setBusiness({
-        ...business,
-        service: { ...business.service, [fieldName]: value }
-      });
-    }
-    // Handle queue settings nested fields
-    else if (name === 'maxPatientsPerDay' || name === 'lastAppointmentTime') {
+    if (name === 'openTime' || name === 'closeTime' || name === 'lastAppointmentTime') {
       const fieldName = name === 'lastAppointmentTime' ? 'lastTimeToAppoint' : name;
       setBusiness({
         ...business,
-        queueSettings: { ...business.queueSettings, [fieldName]: value }
+        workingHours: { ...business.workingHours, [fieldName]: value }
+      });
+    }
+    // Handle queue settings nested fields
+    else if (name === 'maxPatientsPerDay') {
+      setBusiness({
+        ...business,
+        queueSettings: { ...business.queueSettings, [name]: value }
       });
     }
     // Handle regular fields
@@ -163,21 +154,24 @@ export default function Page() {
         }));
       }
 
-      // Format service as array (schema expects array)
-      if (business.service && business.service.name) {
-        businessData.service = [{
-          name: business.service.name,
-          description: business.service.description,
-          price: parseFloat(business.service.price) || 0,
-          duration: parseInt(business.service.duration) || 0
-        }];
+      // Format services as array (schema expects array)
+      if (business.services && business.services.length > 0) {
+        const validServices = business.services.filter(s => s.name && s.name.trim());
+        if (validServices.length > 0) {
+          businessData.service = validServices.map(s => ({
+            name: s.name,
+            description: s.description || '',
+            price: parseFloat(s.price) || 0,
+            duration: parseInt(s.duration) || 0
+          }));
+        }
       }
 
-      // Format queueSettings as array (schema expects array)
-      if (business.queueSettings && business.queueSettings.maxPatientsPerDay) {
+      // Format queueSettings - get lastTimeToAppoint from workingHours
+      if (business.workingHours && business.workingHours.lastTimeToAppoint) {
         businessData.queueSettings = [{
-          maxPatientsPerDay: parseInt(business.queueSettings.maxPatientsPerDay),
-          LastTimeToAppoint: business.queueSettings.lastTimeToAppoint
+          maxPatientsPerDay: 50, // Default value
+          LastTimeToAppoint: business.workingHours.lastTimeToAppoint
         }];
       }
 
@@ -370,44 +364,70 @@ export default function Page() {
             required
           />
 
-          <div className="grid gap-4 mb-4">
-            <Label className="flex items-center gap-2 mb-2">
-              <FaCreditCard />
-              {t('register.business.paymentMethod')}
-            </Label>
-            <div className="space-y-3">
-              <label className="flex items-center gap-3 cursor-pointer p-3 bg-white dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
+          {/* Payment Method Section */}
+          <div className="border-t pt-6 mt-6">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center shadow-lg shadow-amber-500/25">
+                <Wallet size={20} className="text-white" />
+              </div>
+              <div>
+                <p className="text-lg font-bold text-gray-900 dark:text-white">{t('register.business.paymentMethod')}</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400">{t('register.business.selectPayment') || 'Select accepted payment methods'}</p>
+              </div>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <label className={`flex items-center gap-4 cursor-pointer p-4 rounded-xl border-2 transition-all ${
+                business.paymentMethod.includes('cash')
+                  ? 'bg-amber-50 dark:bg-amber-500/10 border-amber-400 dark:border-amber-500'
+                  : 'bg-white dark:bg-gray-800/50 border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'
+              }`}>
                 <input
                   type="checkbox"
                   checked={business.paymentMethod.includes('cash')}
                   onChange={() => handlePaymentMethodChange('cash')}
-                  className="w-4 h-4 text-emerald-500 bg-gray-100 border-gray-300 rounded focus:ring-emerald-500 focus:ring-2"
+                  className="w-5 h-5 text-amber-500 bg-gray-100 border-gray-300 rounded focus:ring-amber-500 focus:ring-2"
                 />
-                <span className="text-sm font-medium text-gray-700 dark:text-gray-300">{t('register.business.cash')}</span>
+                <div className="flex items-center gap-3">
+                  <span className="text-2xl">💵</span>
+                  <span className={`font-medium ${business.paymentMethod.includes('cash') ? 'text-amber-700 dark:text-amber-300' : 'text-gray-700 dark:text-gray-300'}`}>{t('register.business.cash')}</span>
+                </div>
               </label>
-              <label className="flex items-center gap-3 cursor-pointer p-3 bg-white dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
+              <label className={`flex items-center gap-4 cursor-pointer p-4 rounded-xl border-2 transition-all ${
+                business.paymentMethod.includes('card')
+                  ? 'bg-amber-50 dark:bg-amber-500/10 border-amber-400 dark:border-amber-500'
+                  : 'bg-white dark:bg-gray-800/50 border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'
+              }`}>
                 <input
                   type="checkbox"
                   checked={business.paymentMethod.includes('card')}
                   onChange={() => handlePaymentMethodChange('card')}
-                  className="w-4 h-4 text-emerald-500 bg-gray-100 border-gray-300 rounded focus:ring-emerald-500 focus:ring-2"
+                  className="w-5 h-5 text-amber-500 bg-gray-100 border-gray-300 rounded focus:ring-amber-500 focus:ring-2"
                 />
-                <span className="text-sm font-medium text-gray-700 dark:text-gray-300">{t('register.business.cardStripe')}</span>
+                <div className="flex items-center gap-3">
+                  <span className="text-2xl">💳</span>
+                  <span className={`font-medium ${business.paymentMethod.includes('card') ? 'text-amber-700 dark:text-amber-300' : 'text-gray-700 dark:text-gray-300'}`}>{t('register.business.cardStripe')}</span>
+                </div>
               </label>
             </div>
           </div>
 
-          <div className="grid gap-4 mb-4">
-            <Label htmlFor="specialization" className="flex items-center gap-2">
-              <FaBriefcase />
-              {t('register.business.specialization')} *
-            </Label>
+          {/* Specialization Section */}
+          <div className="border-t pt-6 mt-6">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center shadow-lg shadow-cyan-500/25">
+                <Building2 size={20} className="text-white" />
+              </div>
+              <div>
+                <p className="text-lg font-bold text-gray-900 dark:text-white">{t('register.business.specialization')}</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400">{t('register.business.selectCategory') || 'Select your business category'}</p>
+              </div>
+            </div>
             <select
               id="specialization"
               name="specialization"
               value={business.specialization}
               onChange={handleChange}
-              className="w-full px-4 py-3 bg-white dark:bg-gray-800/50 border-2 border-gray-200 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent text-gray-900 dark:text-white transition-all"
+              className="w-full px-4 py-4 bg-gray-50 dark:bg-gray-900/50 border-2 border-gray-200 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-cyan-500 focus:border-transparent text-gray-900 dark:text-white transition-all cursor-pointer text-base"
               required
             >
               <option value="">{t('register.business.specializations.select')}</option>
@@ -442,17 +462,11 @@ export default function Page() {
             />
 
             <ServiceSection
-              service={business.service}
-              onChange={handleChange}
+              services={business.services}
+              onServicesChange={(services) => setBusiness({ ...business, services })}
               t={t}
             />
 
-
-          <QueueSettingsSection
-            queueSettings={business.queueSettings}
-            onChange={handleChange}
-            t={t}
-          />
 
           <Button type="submit" className="w-full my-3" disabled={loading}>
             {loading ? t('register.business.creatingAccount') : t('register.business.createBusinessAccount')}

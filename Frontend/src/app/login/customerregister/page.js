@@ -50,7 +50,8 @@ export default function Page() {
     return errorData.toString();
   };
 
-  const handleRegister = async () => {
+  const handleRegister = async (e) => {
+    e.preventDefault();
     setError('');
     setLoading(true);
     try {
@@ -159,8 +160,10 @@ export default function Page() {
             />
           </div>
 
-          <div className="space-y-4 mb-6">
-            <div>
+          {/* Form Card */}
+          <form onSubmit={handleRegister} className="bg-white dark:bg-gray-800/50 border-2 border-gray-200 dark:border-gray-700 rounded-2xl p-6 shadow-sm mb-6">
+            {/* Full Name */}
+            <div className="mb-4">
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 {t('register.customer.fullName')}
               </label>
@@ -170,13 +173,15 @@ export default function Page() {
                   onChange={handleChange}
                   value={user.name}
                   name="name"
-                  className="input-enterprise pl-11"
+                  className="w-full px-4 py-3.5 pl-11 bg-gray-50 dark:bg-gray-900/50 border-2 border-gray-200 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent text-gray-900 dark:text-white transition-all"
                   placeholder={t('register.customer.namePlaceholder')}
+                  required
                 />
               </div>
             </div>
 
-            <div>
+            {/* Email */}
+            <div className="mb-4">
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 {t('register.customer.email')}
               </label>
@@ -187,13 +192,15 @@ export default function Page() {
                   onChange={handleChange}
                   value={user.email}
                   name="email"
-                  className="input-enterprise pl-11"
+                  className="w-full px-4 py-3.5 pl-11 bg-gray-50 dark:bg-gray-900/50 border-2 border-gray-200 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent text-gray-900 dark:text-white transition-all"
                   placeholder={t('register.customer.emailPlaceholder')}
+                  required
                 />
               </div>
             </div>
 
-            <div>
+            {/* Phone */}
+            <div className="mb-4">
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 {t('register.customer.phone')}
               </label>
@@ -204,13 +211,15 @@ export default function Page() {
                   onChange={handleChange}
                   value={user.phone || ''}
                   name="phone"
-                  className="input-enterprise pl-11"
+                  className="w-full px-4 py-3.5 pl-11 bg-gray-50 dark:bg-gray-900/50 border-2 border-gray-200 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent text-gray-900 dark:text-white transition-all"
                   placeholder={t('register.customer.phonePlaceholder')}
+                  required
                 />
               </div>
             </div>
 
-            <div>
+            {/* Password */}
+            <div className="mb-4">
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 {t('register.customer.password')}
               </label>
@@ -221,25 +230,28 @@ export default function Page() {
                   onChange={handleChange}
                   value={user.password}
                   name="password"
-                  className="input-enterprise pl-11"
+                  className="w-full px-4 py-3.5 pl-11 bg-gray-50 dark:bg-gray-900/50 border-2 border-gray-200 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent text-gray-900 dark:text-white transition-all"
                   placeholder={t('register.customer.passwordPlaceholder')}
+                  required
                 />
               </div>
             </div>
-          </div>
 
-          <button 
-            className="btn-primary w-full py-4 flex items-center justify-center gap-2 mb-6" 
-            onClick={handleRegister}
-            disabled={loading}
-          >
-            {loading ? (
-              <><div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />{t('common.processing')}</>
-            ) : (
-              <>{t('register.customer.createAccount')} <ArrowRight size={18} /></>
-            )}
-          </button>
+            {/* Submit Button */}
+            <button 
+              type="submit"
+              className="w-full py-4 bg-gradient-to-r from-emerald-500 to-teal-600 text-white rounded-xl font-semibold flex items-center justify-center gap-2 hover:from-emerald-600 hover:to-teal-700 transition-all shadow-lg shadow-emerald-500/25 hover:shadow-emerald-500/40 disabled:opacity-50" 
+              disabled={loading}
+            >
+              {loading ? (
+                <><div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />{t('common.processing')}</>
+              ) : (
+                <>{t('register.customer.createAccount')} <ArrowRight size={18} /></>
+              )}
+            </button>
+          </form>
 
+          {/* Divider */}
           <div className="relative my-6">
             <div className="absolute inset-0 flex items-center">
               <div className="w-full border-t border-gray-200 dark:border-gray-800"></div>
@@ -249,12 +261,13 @@ export default function Page() {
             </div>
           </div>
 
+          {/* Google Button */}
           <button 
             type="button"
             onClick={handleGoogleSignup}
-            className="w-full py-3.5 bg-white dark:bg-gray-900 text-gray-700 dark:text-white border-2 border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 rounded-xl font-medium flex items-center justify-center gap-3 transition-all duration-200"
+            className="w-full py-4 bg-white dark:bg-gray-800 text-gray-700 dark:text-white border-2 border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 rounded-xl font-medium flex items-center justify-center gap-3 transition-all"
           >
-            <FcGoogle size={20} />
+            <FcGoogle size={22} />
             {t('register.customer.signUpWithGoogle')}
           </button>
 

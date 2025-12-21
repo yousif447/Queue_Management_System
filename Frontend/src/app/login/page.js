@@ -198,44 +198,47 @@ export default function Page() {
             else handleLogin(e, businessData, 'business', '/business', t('login.businessNotFound'));
           }} className="space-y-6">
             
-            {/* Email Field */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{t('login.email')}</label>
-              <div className="relative">
-                <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"><Mail size={20} /></div>
-                <input type="email" value={getData().email} onChange={(e) => setData({...getData(), email: e.target.value})}
-                  className="input-enterprise pl-12" placeholder="email@example.com" required />
+            {/* Form Card */}
+            <div className="bg-white dark:bg-gray-800/50 border-2 border-gray-200 dark:border-gray-700 rounded-2xl p-6 shadow-sm">
+              {/* Email Field */}
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{t('login.email')}</label>
+                <div className="relative">
+                  <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"><Mail size={20} /></div>
+                  <input type="email" value={getData().email} onChange={(e) => setData({...getData(), email: e.target.value})}
+                    className="w-full px-4 py-3.5 pl-12 bg-gray-50 dark:bg-gray-900/50 border-2 border-gray-200 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent text-gray-900 dark:text-white transition-all" placeholder="email@example.com" required />
+                </div>
               </div>
-            </div>
 
-            {/* Password Field */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{t('login.password')}</label>
-              <div className="relative">
-                <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"><Lock size={20} /></div>
-                <input type={showPassword ? 'text' : 'password'} value={getData().password} onChange={(e) => setData({...getData(), password: e.target.value})}
-                  className="input-enterprise pl-12 pr-12" placeholder={t('login.enterPassword')} required />
-                <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
-                  {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
-                </button>
+              {/* Password Field */}
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{t('login.password')}</label>
+                <div className="relative">
+                  <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"><Lock size={20} /></div>
+                  <input type={showPassword ? 'text' : 'password'} value={getData().password} onChange={(e) => setData({...getData(), password: e.target.value})}
+                    className="w-full px-4 py-3.5 pl-12 pr-12 bg-gray-50 dark:bg-gray-900/50 border-2 border-gray-200 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent text-gray-900 dark:text-white transition-all" placeholder={t('login.enterPassword')} required />
+                  <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+                    {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                  </button>
+                </div>
               </div>
-            </div>
 
-            {/* Forgot Password */}
-              <div className="text-right">
+              {/* Forgot Password */}
+              <div className="text-right mb-4">
                 <Link href="/login/forgot-password" className="text-sm text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 dark:hover:text-emerald-300 font-medium">
                   {t('login.forgotPassword')}
                 </Link>
               </div>
 
-            {/* Submit Button */}
-            <button type="submit" disabled={loading} className="btn-primary w-full flex items-center justify-center gap-2 py-4">
-              {loading ? (
-                <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-              ) : (
-                <><span>{t('login.loginButton')}</span><ArrowRight size={18} /></>
-              )}
-            </button>
+              {/* Submit Button */}
+              <button type="submit" disabled={loading} className="w-full py-4 bg-gradient-to-r from-emerald-500 to-teal-600 text-white rounded-xl font-semibold flex items-center justify-center gap-2 hover:from-emerald-600 hover:to-teal-700 transition-all shadow-lg shadow-emerald-500/25 hover:shadow-emerald-500/40 disabled:opacity-50">
+                {loading ? (
+                  <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                ) : (
+                  <><span>{t('login.loginButton')}</span><ArrowRight size={18} /></>
+                )}
+              </button>
+            </div>
 
             {/* Google Login (Customer only) */}
             {activeTab === 'customer' && (
@@ -245,7 +248,7 @@ export default function Page() {
                   <div className="relative flex justify-center"><span className="px-4 bg-gray-50 dark:bg-gray-950 text-gray-500 dark:text-gray-400 text-sm">{t('login.orContinueWith')}</span></div>
                 </div>
                 <button type="button" onClick={handleGoogleLogin}
-                  className="w-full flex items-center justify-center gap-3 py-4 px-6 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-all shadow-sm hover:shadow-md">
+                  className="w-full flex items-center justify-center gap-3 py-4 px-6 bg-white dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700 rounded-xl font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 hover:border-gray-300 dark:hover:border-gray-600 transition-all">
                   <FcGoogle size={22} />
                   {t('login.googleLogin')}
                 </button>
