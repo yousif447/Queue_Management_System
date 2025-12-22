@@ -1,10 +1,10 @@
 "use client";
-import { useTranslations } from '@/hooks/useTranslations';
 import { useSocket } from '@/contexts/SocketContext';
-import { Bell, Clock, CreditCard, MapPin, X, CheckCircle } from 'lucide-react';
+import { useTranslations } from '@/hooks/useTranslations';
+import { Bell, CheckCircle, Clock, CreditCard, MapPin, X } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 
-export default function NotificationBell() {
+export default function NotificationBell({ position = 'right' }) {
   const { t } = useTranslations();
   const { notifications, removeNotification, clearNotifications, markAsRead } = useSocket();
   const [isOpen, setIsOpen] = useState(false);
@@ -37,15 +37,26 @@ export default function NotificationBell() {
   };
 
   const formatTime = (timestamp) => {
+    if (!timestamp) return '';
     const now = new Date();
     const time = new Date(timestamp);
     const diff = Math.floor((now - time) / 1000);
     
-    if (diff < 60) return t('notificationBell.justNow');
-    if (diff < 3600) return t('notificationBell.minutesAgo', { minutes: Math.floor(diff / 60) });
-    if (diff < 86400) return t('notificationBell.hoursAgo', { hours: Math.floor(diff / 3600) });
+    if (diff < 60) return t('notificationBell.justNow') || 'Just now';
+    if (diff < 3600) return t('notificationBell.minutesAgo', { minutes: Math.floor(diff / 60) }) || `${Math.floor(diff / 60)}m ago`;
+    if (diff < 86400) return t('notificationBell.hoursAgo', { hours: Math.floor(diff / 3600) }) || `${Math.floor(diff / 3600)}h ago`;
     
     return time.toLocaleDateString();
+  };
+
+  // Determine dropdown position classes based on position prop
+  const getDropdownClasses = () => {
+    if (position === 'left') {
+      // For sidebar - position to the right of the bell, use fixed on mobile
+      return 'fixed inset-4 sm:absolute sm:inset-auto sm:left-0 sm:top-full sm:mt-2 sm:w-80 lg:w-96';
+    }
+    // Default right position for navbar
+    return 'fixed inset-4 sm:absolute sm:inset-auto sm:right-0 sm:top-full sm:mt-2 sm:w-80 lg:w-96';
   };
 
   return (
@@ -54,7 +65,7 @@ export default function NotificationBell() {
       <button
         onClick={() => setIsOpen(!isOpen)}
         className="relative w-10 h-10 rounded-xl bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition-all duration-200 flex items-center justify-center"
-        aria-label={t('notificationBell.title')}
+        aria-label={t('notificationBell.title') || 'Notifications'}
       >
         <Bell size={20} className="text-gray-600 dark:text-gray-400" />
         {unreadCount > 0 && (
@@ -67,8 +78,8 @@ export default function NotificationBell() {
       {/* Notification Dropdown */}
       {isOpen && (
         <>
-          <div className="fixed inset-0 z-40" onClick={() => setIsOpen(false)} />
-          <div className="absolute right-0 mt-2 w-96 max-h-[500px] bg-white dark:bg-gray-900 rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-700/50 z-50 overflow-hidden flex flex-col animate-fade-in-scale">
+          <div className="fixed inset-0 z-40 bg-black/30" onClick={() => setIsOpen(false)} />
+          <div className={`${getDropdownClasses()} max-h-[80vh] sm:max-h-[500px] bg-white dark:bg-gray-900 rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-700/50 z-50 overflow-hidden flex flex-col animate-fade-in-scale`}>
             {/* Header */}
             <div className="flex items-center justify-between p-4 border-b border-gray-100 dark:border-gray-800 bg-gradient-to-r from-gray-50 to-white dark:from-gray-800 dark:to-gray-900">
               <div className="flex items-center gap-3">
@@ -76,18 +87,27 @@ export default function NotificationBell() {
                   <Bell size={18} className="text-white" />
                 </div>
                 <div>
-                  <h3 className="font-bold text-gray-900 dark:text-white">{t('notificationBell.title')}</h3>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">{unreadCount} {t('notificationBell.unread')}</p>
+                  <h3 className="font-bold text-gray-900 dark:text-white">{t('notificationBell.title') || 'Notifications'}</h3>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">{unreadCount} {t('notificationBell.unread') || 'unread'}</p>
                 </div>
               </div>
-              {notifications.length > 0 && (
+              <div className="flex items-center gap-2">
+                {notifications.length > 0 && (
+                  <button
+                    onClick={(e) => { e.stopPropagation(); clearNotifications(); }}
+                    className="text-xs text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 dark:hover:text-emerald-300 font-medium px-3 py-1.5 rounded-lg hover:bg-emerald-50 dark:hover:bg-emerald-500/10 transition-colors"
+                  >
+                    {t('notificationBell.clearAll') || 'Clear all'}
+                  </button>
+                )}
+                {/* Close button */}
                 <button
-                  onClick={(e) => { e.stopPropagation(); clearNotifications(); }}
-                  className="text-xs text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 dark:hover:text-emerald-300 font-medium px-3 py-1.5 rounded-lg hover:bg-emerald-50 dark:hover:bg-emerald-500/10 transition-colors"
+                  onClick={() => setIsOpen(false)}
+                  className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
                 >
-                  {t('notificationBell.clearAll')}
+                  <X size={18} className="text-gray-500 dark:text-gray-400" />
                 </button>
-              )}
+              </div>
             </div>
 
             {/* Notifications List */}
@@ -97,8 +117,8 @@ export default function NotificationBell() {
                   <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
                     <Bell size={32} className="text-gray-300 dark:text-gray-600" />
                   </div>
-                  <p className="text-gray-600 dark:text-gray-400 font-medium">{t('notificationBell.empty')}</p>
-                  <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">{t('notificationBell.emptyDesc')}</p>
+                  <p className="text-gray-600 dark:text-gray-400 font-medium">{t('notificationBell.empty') || 'No notifications'}</p>
+                  <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">{t('notificationBell.emptyDesc') || "You're all caught up!"}</p>
                 </div>
               ) : (
                 <div className="divide-y divide-gray-100 dark:divide-gray-800">
@@ -122,7 +142,7 @@ export default function NotificationBell() {
                           {getIcon(notification.type)}
                         </div>
                         <div className="flex-1 min-w-0">
-                          <p className="text-sm text-gray-900 dark:text-white font-medium mb-1">{notification.message}</p>
+                          <p className="text-sm text-gray-900 dark:text-white font-medium mb-1">{notification.message || 'New notification'}</p>
                           <p className="text-xs text-gray-500 dark:text-gray-400">{formatTime(notification.timestamp)}</p>
                         </div>
                       </div>
@@ -137,5 +157,3 @@ export default function NotificationBell() {
     </div>
   );
 }
-
-

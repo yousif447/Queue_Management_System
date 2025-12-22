@@ -134,60 +134,54 @@ export default function Navbar() {
             {/* Auth Section */}
             {!loading && (
               isAuthenticated ? (
-                <div className="flex items-center gap-3">
-                  {userData?.role === 'user' && (
-                    <div className="relative"><NotificationBell /></div>
-                  )}
-                  
+                <div className="relative">
                   {/* User Avatar Menu */}
-                  <div className="relative">
-                    <button 
-                      onClick={() => setIsAvatarMenuOpen(!isAvatarMenuOpen)} 
-                      className="flex items-center gap-2 p-1.5 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-all duration-200"
-                    >
-                      <div className="w-10 h-10 rounded-xl overflow-hidden bg-gradient-to-br from-emerald-500 to-teal-600 text-white flex items-center justify-center text-sm font-bold shadow-lg shadow-emerald-500/25 ring-2 ring-white dark:ring-gray-800">
-                        {(userData?.profileImage || userData?.image) ? (
-                          <img src={getImageUrl(userData?.profileImage || userData?.image)} alt={userData?.name} className="w-full h-full object-cover"
-                            onError={(e) => { e.target.onerror = null; e.target.style.display = 'none'; e.target.parentNode.innerText = userData?.name?.charAt(0).toUpperCase(); }} />
-                        ) : (userData?.name?.charAt(0).toUpperCase())}
-                      </div>
-                      <ChevronDown size={16} className={`text-gray-400 transition-transform duration-200 ${isAvatarMenuOpen ? 'rotate-180' : ''}`} />
-                    </button>
+                  <button 
+                    onClick={() => setIsAvatarMenuOpen(!isAvatarMenuOpen)} 
+                    className="flex items-center gap-2 p-1.5 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-all duration-200"
+                  >
+                    <div className="w-10 h-10 rounded-xl overflow-hidden bg-gradient-to-br from-emerald-500 to-teal-600 text-white flex items-center justify-center text-sm font-bold shadow-lg shadow-emerald-500/25 ring-2 ring-white dark:ring-gray-800">
+                      {(userData?.profileImage || userData?.image) ? (
+                        <img src={getImageUrl(userData?.profileImage || userData?.image)} alt={userData?.name} className="w-full h-full object-cover"
+                          onError={(e) => { e.target.onerror = null; e.target.style.display = 'none'; e.target.parentNode.innerText = userData?.name?.charAt(0).toUpperCase(); }} />
+                      ) : (userData?.name?.charAt(0).toUpperCase())}
+                    </div>
+                    <ChevronDown size={16} className={`text-gray-400 transition-transform duration-200 ${isAvatarMenuOpen ? 'rotate-180' : ''}`} />
+                  </button>
 
-                    {isAvatarMenuOpen && (
-                      <div className="absolute right-0 mt-2 w-64 bg-white dark:bg-gray-900 rounded-2xl shadow-2xl z-50 border border-gray-100 dark:border-gray-800 animate-fade-in-scale overflow-hidden">
-                        <div className="p-4 border-b border-gray-100 dark:border-gray-800 bg-gradient-to-br from-gray-50 to-white dark:from-gray-800 dark:to-gray-900">
-                          <div className="flex items-center gap-3">
-                            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 text-white flex items-center justify-center font-bold shadow-lg shadow-emerald-500/25 overflow-hidden">
-                              {(userData?.profileImage || userData?.image) ? (
-                                <img src={getImageUrl(userData?.profileImage || userData?.image)} alt={userData?.name} className="w-full h-full object-cover" 
-                                  onError={(e) => { e.target.style.display = 'none'; e.target.parentNode.classList.remove('overflow-hidden'); e.target.parentNode.innerText = userData?.name?.charAt(0).toUpperCase(); }} />
-                              ) : (
-                                userData?.name?.charAt(0).toUpperCase()
-                              )}
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <p className="font-semibold text-gray-900 dark:text-white truncate">{userData?.name || t('adminDashboard.user')}</p>
-                              <p className="text-sm text-gray-500 dark:text-gray-400 truncate">{userData?.email || ''}</p>
-                            </div>
+                  {isAvatarMenuOpen && (
+                    <div className="absolute right-0 mt-2 w-64 bg-white dark:bg-gray-900 rounded-2xl shadow-2xl z-50 border border-gray-100 dark:border-gray-800 animate-fade-in-scale overflow-hidden">
+                      <div className="p-4 border-b border-gray-100 dark:border-gray-800 bg-gradient-to-br from-gray-50 to-white dark:from-gray-800 dark:to-gray-900">
+                        <div className="flex items-center gap-3">
+                          <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 text-white flex items-center justify-center font-bold shadow-lg shadow-emerald-500/25 overflow-hidden">
+                            {(userData?.profileImage || userData?.image) ? (
+                              <img src={getImageUrl(userData?.profileImage || userData?.image)} alt={userData?.name} className="w-full h-full object-cover" 
+                                onError={(e) => { e.target.style.display = 'none'; e.target.parentNode.classList.remove('overflow-hidden'); e.target.parentNode.innerText = userData?.name?.charAt(0).toUpperCase(); }} />
+                            ) : (
+                              userData?.name?.charAt(0).toUpperCase()
+                            )}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="font-semibold text-gray-900 dark:text-white truncate">{userData?.name || t('adminDashboard.user')}</p>
+                            <p className="text-sm text-gray-500 dark:text-gray-400 truncate">{userData?.email || ''}</p>
                           </div>
                         </div>
-                        <div className="p-2">
-                          <Link href={userData?.role === 'user' ? '/user' : userData?.role === 'business' ? '/business' : userData?.role === 'admin' ? '/adminDashboard' : '/'}
-                            className="flex items-center gap-3 w-full px-4 py-3 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-xl transition-colors font-medium"
-                            onClick={() => setIsAvatarMenuOpen(false)}>
-                            <span className="text-lg">📊</span>
-                            {t('nav.dashboard')}
-                          </Link>
-                          <button onClick={() => { handleLogout(); setIsAvatarMenuOpen(false); }} 
-                            className="flex items-center gap-3 w-full px-4 py-3 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-xl transition-colors font-medium">
-                            <BiLogOut size={18} />
-                            {t('nav.logout')}
-                          </button>
-                        </div>
                       </div>
-                    )}
-                  </div>
+                      <div className="p-2">
+                        <Link href={userData?.role === 'user' ? '/user' : userData?.role === 'business' ? '/business' : userData?.role === 'admin' ? '/adminDashboard' : '/'}
+                          className="flex items-center gap-3 w-full px-4 py-3 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-xl transition-colors font-medium"
+                          onClick={() => setIsAvatarMenuOpen(false)}>
+                          <span className="text-lg">📊</span>
+                          {t('nav.dashboard')}
+                        </Link>
+                        <button onClick={() => { handleLogout(); setIsAvatarMenuOpen(false); }} 
+                          className="flex items-center gap-3 w-full px-4 py-3 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-xl transition-colors font-medium">
+                          <BiLogOut size={18} />
+                          {t('nav.logout')}
+                        </button>
+                      </div>
+                    </div>
+                  )}
                 </div>
               ) : (
                 <Link href="/login">
@@ -202,6 +196,10 @@ export default function Navbar() {
 
           {/* Right Side Controls */}
           <div className="flex items-center gap-2">
+            {/* Notification Bell - Show for all authenticated users on all screens */}
+            {!loading && isAuthenticated && (
+              <NotificationBell />
+            )}
             <LanguageSwitcher />
             <ThemeToggle />
             

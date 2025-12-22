@@ -2,6 +2,7 @@
 import { API_URL, authFetch } from '@/lib/api';
 
 import LanguageSwitcher from '@/components/LanguageSwitcher';
+import NotificationBell from '@/components/NotificationBell';
 import ThemeToggle from '@/components/ThemeToggle';
 import { BiLogOut } from 'react-icons/bi';
 import { FaTimes } from "react-icons/fa";
@@ -60,6 +61,9 @@ export default function Sidebar({ t, navItems, activeTab, setActiveTab, isSideba
             <div className="mt-4 flex gap-2 items-center justify-between w-full">
                  <div className="flex-1">
                     <LanguageSwitcher />
+                 </div>
+                 <div>
+                    <NotificationBell position="left" />
                  </div>
                  <div>
                     <ThemeToggle />

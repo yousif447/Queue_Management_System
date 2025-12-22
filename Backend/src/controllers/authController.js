@@ -233,6 +233,14 @@ exports.registerBusiness = async (req, res) => {
         console.error('⚠️ Error auto-generating embeddings:', err);
       });
 
+    // Emit socket event for real-time homepage updates (new business appears immediately)
+    const socketIO = req.app.get("socketIO");
+    if (socketIO && socketIO.emitBusinessCreated) {
+      // Get business without password for socket emission
+      const safeBusiness = await Business.findById(business._id).select("-password");
+      socketIO.emitBusinessCreated(safeBusiness);
+    }
+
     const payload = {
       id: business._id.toString(),
       role: business.role,

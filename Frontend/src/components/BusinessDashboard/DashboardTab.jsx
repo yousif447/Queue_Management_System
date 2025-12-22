@@ -428,6 +428,28 @@ export default function DashboardTab({ businessData }) {
     }
   };
 
+  const handleDeleteTicket = async (ticketId) => {
+    if (!window.confirm(t('businessDashboard.messages.confirmDeleteTicket') || 'Are you sure you want to permanently delete this ticket?')) {
+      return;
+    }
+    try {
+      const response = await authFetch(`${API_URL}/api/v1/tickets/tickets/${ticketId}`, {
+        method: 'DELETE',
+      });
+
+      if (response.ok) {
+        toast.success(t('businessDashboard.messages.ticketDeleted') || 'Ticket deleted successfully');
+        fetchTickets();
+        fetchStats();
+      } else {
+        const error = await response.json();
+        toast.error(error.message || t('businessDashboard.messages.failedDelete') || 'Failed to delete ticket');
+      }
+    } catch (error) {
+      toast.error(t('businessDashboard.messages.networkError') || 'Network error');
+    }
+  };
+
   const handleAddWalkIn = async () => {
     if (!walkInData.name || !walkInData.phone) { toast.error(t('businessDashboard.messages.missingInfo')); return; }
     try {
@@ -962,12 +984,21 @@ export default function DashboardTab({ businessData }) {
                           </div>
                         </div>
                       </div>
-                      <button 
-                        onClick={() => handleReactivateTicket(ticket._id)}
-                        className="w-full py-3 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-xl font-semibold hover:from-blue-600 hover:to-blue-700 transition-all shadow-md flex items-center justify-center gap-2"
-                      >
-                        ↻ {t('businessDashboard.queueManagement.reactivate')}
-                      </button>
+                      <div className="flex gap-2">
+                        <button 
+                          onClick={() => handleReactivateTicket(ticket._id)}
+                          className="flex-1 py-3 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-xl font-semibold hover:from-blue-600 hover:to-blue-700 transition-all shadow-md flex items-center justify-center gap-2"
+                        >
+                          ↻ {t('businessDashboard.queueManagement.reactivate')}
+                        </button>
+                        <button 
+                          onClick={() => handleDeleteTicket(ticket._id)}
+                          className="px-4 py-3 bg-gradient-to-r from-red-500 to-red-600 text-white rounded-xl font-semibold hover:from-red-600 hover:to-red-700 transition-all shadow-md flex items-center justify-center"
+                          title={t('businessDashboard.messages.deleteTicket') || 'Delete ticket'}
+                        >
+                          <FaTimes />
+                        </button>
+                      </div>
                     </div>
 
                     {/* Desktop Layout */}
@@ -985,12 +1016,19 @@ export default function DashboardTab({ businessData }) {
                            <span className="text-xs text-gray-600 dark:text-gray-400 font-semibold">{t('userDashboard.ticketStatus.cancelled')}</span>
                         </div>
                       </div>
-                      <div className="flex justify-end">
+                      <div className="flex gap-2 justify-end">
                         <button 
                           onClick={() => handleReactivateTicket(ticket._id)}
                           className="px-6 py-3 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-xl font-semibold hover:from-blue-600 hover:to-blue-700 transition-all shadow-md flex items-center gap-2"
                         >
                           ↻ {t('businessDashboard.queueManagement.reactivate')}
+                        </button>
+                        <button 
+                          onClick={() => handleDeleteTicket(ticket._id)}
+                          className="px-4 py-3 bg-gradient-to-r from-red-500 to-red-600 text-white rounded-xl font-semibold hover:from-red-600 hover:to-red-700 transition-all shadow-md flex items-center justify-center"
+                          title={t('businessDashboard.messages.deleteTicket') || 'Delete ticket'}
+                        >
+                          <FaTimes />
                         </button>
                       </div>
                     </div>

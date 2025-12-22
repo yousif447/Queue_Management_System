@@ -144,10 +144,6 @@ export default function AdminLogin() {
               )}
             </button>
           </form>
-
-          <p className="text-center text-gray-500 mt-8 text-sm">
-            {t('adminLogin.accessDenied').split('.')[0]}.
-          </p>
         </div>
       </div>
     </div>

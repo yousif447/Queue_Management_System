@@ -37,6 +37,12 @@ exports.createQueue = async (req, res) => {
       date: new Date(date),
     });
 
+    // Emit socket event for real-time homepage updates (business becomes available)
+    const socketIO = req.app.get("socketIO");
+    if (socketIO && socketIO.emitBusinessUpdated) {
+      socketIO.emitBusinessUpdated(business);
+    }
+
     res.status(201).json({
       status: "success",
       data: queue,
@@ -75,6 +81,15 @@ exports.pauseQueue = async (req, res) => {
       businessId: queue.businessId
     });
 
+    // Emit socket event for real-time homepage updates (business shows as "Busy")
+    const socketIO = req.app.get("socketIO");
+    if (socketIO && socketIO.emitBusinessUpdated) {
+      const business = await Business.findById(queue.businessId).select("-password");
+      if (business) {
+        socketIO.emitBusinessUpdated(business);
+      }
+    }
+
     res.status(200).json({
       status: "success",
       message: "Queue paused successfully",
@@ -100,6 +115,15 @@ exports.resumeQueue = async (req, res) => {
 
     if (!queue) return res.status(404).json({ message: "Queue not found" });
 
+    // Emit socket event for real-time homepage updates (business becomes available again)
+    const socketIO = req.app.get("socketIO");
+    if (socketIO && socketIO.emitBusinessUpdated) {
+      const business = await Business.findById(queue.businessId).select("-password");
+      if (business) {
+        socketIO.emitBusinessUpdated(business);
+      }
+    }
+
     res.status(200).json({
       status: "success",
       message: "Queue resumed successfully",
@@ -124,6 +148,15 @@ exports.closeQueue = async (req, res) => {
     );
 
     if (!queue) return res.status(404).json({ message: "Queue not found" });
+
+    // Emit socket event for real-time homepage updates (business becomes closed)
+    const socketIO = req.app.get("socketIO");
+    if (socketIO && socketIO.emitBusinessUpdated) {
+      const business = await Business.findById(queue.businessId).select("-password");
+      if (business) {
+        socketIO.emitBusinessUpdated(business);
+      }
+    }
 
     res.status(200).json({
       status: "success",
