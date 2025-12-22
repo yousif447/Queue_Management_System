@@ -148,6 +148,8 @@ exports.createTicket = async (req, res) => {
 
     
     // Only emit events if not pending payment
+    // Note: ticketBooked event and user notification are NOT sent here to avoid duplicate toasts
+    // The payment page shows its own toast for successful ticket creation
     if (socketIO && ticket.status !== 'pending_payment') {
       socketIO.emitTicketCreated(businessId, ticket);
       socketIO.emitQueueUpdate(businessId, {
@@ -155,28 +157,6 @@ exports.createTicket = async (req, res) => {
         currentCount: updatedQueue.currentCount,
         currentTicketNumber: updatedQueue.currentTicketNumber,
       });
-      
-      if (userId && !req.body.suppressUserSocket) {
-        socketIO.emitToUser(userId, 'ticketBooked', {
-           ticket,
-           message: `Ticket #${ticket.ticketNumber} booked successfully`,
-           timestamp: new Date()
-        });
-      }
-    }
-
-    // Create Notification & Send Email via NotificationService
-    if (userId) {
-       await NotificationService.createNotification({
-          userId,
-          businessId,
-          ticketId: ticket._id,
-          queueId,
-          type: 'ticket',
-          message: `Ticket #${ticket.ticketNumber} booked successfully`,
-          userEmail: req.user?.email,
-          userName: req.user?.name,
-       }).catch(err => console.error("Notification trigger failed:", err));
     }
 
     return res.status(201).json({

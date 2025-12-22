@@ -362,7 +362,12 @@ export default function DashboardTab({ businessData }) {
   const handleCallTicket = async (ticketId) => {
     try {
       const response = await authFetch(`${API_URL}/api/v1/tickets/tickets/${ticketId}/call`, { method: "PUT" });
-      if (response.ok) { toast.success(t('businessDashboard.messages.ticketCalled', { ticketNumber: "??" })); fetchTickets(); fetchStats(); }
+      if (response.ok) { 
+        const data = await response.json();
+        toast.success(t('businessDashboard.messages.ticketCalled', { ticketNumber: data.data?.ticketNumber || ticketId })); 
+        fetchTickets(); 
+        fetchStats(); 
+      }
     } catch (error) { toast.error(t('businessDashboard.messages.failedCall')); }
   };
 

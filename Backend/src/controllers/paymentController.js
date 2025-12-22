@@ -210,45 +210,8 @@ exports.createPayment = async (req, res) => {
     
     await ticket.save();
 
-    // ------------------------------------------
-    // NOTIFICATION (Direct Payment) via NotificationService
-    // ------------------------------------------
-    try {
-      if (req.user) {
-         let emailSubject = "Payment Receipt 💳";
-         let emailMessage = `Your payment of $${amount} for Ticket #${ticket.ticketNumber} was successful.`;
-         let socketTitle = "Payment Successful";
-
-         if (paymentMethod === 'cash') {
-            emailSubject = "Ticket Confirmed (Pay at Counter) 🎟️";
-            emailMessage = `Your booking for Ticket #${ticket.ticketNumber} is confirmed. Please pay $${amount} at the counter upon arrival.`;
-            socketTitle = "Payment Due";
-         }
-
-         await NotificationService.createNotification({
-             userId: req.user._id || req.user.id,
-             businessId: ticket.businessId,
-             ticketId: ticketId,
-             type: 'payment',
-             message: emailMessage,
-             userEmail: req.user.email,
-             userName: req.user.name,
-             emailSubject: emailSubject
-         });
-      
-         /* Redundant: Handled by NotificationService.newNotification
-         const socketIO = req.app.get("socketIO");
-         if (socketIO && !req.body.suppressUserSocket) {
-            socketIO.emitToUser(req.user.id, 'paymentUpdate', {
-                status: paymentMethod === 'cash' ? 'pending' : 'success',
-                title: socketTitle,
-                message: emailMessage,
-                ticketId: ticketId
-            });
-         }
-         */
-      }
-    } catch (e) { console.log('Notification error:', e); }
+    // NOTE: Payment notification toasts are handled by frontend payment pages
+    // No backend notification needed here to avoid duplicate toasts
 
     res.status(201).json({
       success: true,
