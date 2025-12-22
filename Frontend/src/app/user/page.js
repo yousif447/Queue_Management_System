@@ -335,6 +335,7 @@ export default function PatientDashboard() {
             setActiveTab={setActiveTab}
             isSidebarOpen={isSidebarOpen}
             setIsSidebarOpen={setIsSidebarOpen}
+            userData={userData}
           />
 
           {/* Main Content */}

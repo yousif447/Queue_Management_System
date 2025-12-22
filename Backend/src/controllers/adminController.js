@@ -801,35 +801,60 @@ exports.createAnnouncement = async (req, res) => {
       });
     }
     
-    // Get target users based on audience
-    let targetUsers = [];
+    // Get target recipients based on audience
+    let notifications = [];
+    const fullMessage = title ? `${title}: ${message}` : message;
+    
+    // Target users (from Users collection with role: "user")
     if (targetAudience === "all" || targetAudience === "users") {
       const users = await Users.find({ role: "user" }).select("_id");
-      targetUsers = targetUsers.concat(users.map(u => u._id));
+      const userNotifications = users.map(u => ({
+        userId: u._id,
+        message: fullMessage,
+        type: "system",
+        isRead: false,
+      }));
+      notifications = notifications.concat(userNotifications);
     }
+    
+    // Target businesses (from Business collection)
     if (targetAudience === "all" || targetAudience === "owners") {
-      const owners = await Users.find({ role: "owner" }).select("_id");
-      targetUsers = targetUsers.concat(owners.map(u => u._id));
+      const businesses = await Business.find().select("_id");
+      const businessNotifications = businesses.map(b => ({
+        userId: b._id, // Using userId field to store business ID for compatibility
+        businessId: b._id, // Also set businessId for clarity
+        message: fullMessage,
+        type: "system",
+        isRead: false,
+      }));
+      notifications = notifications.concat(businessNotifications);
     }
-
-    // Create notifications for each user (batch insert)
-    // Combine title and message since schema only has 'message' field
-    const fullMessage = title ? `${title}: ${message}` : message;
-    const notifications = targetUsers.map(userId => ({
-      userId,
-      message: fullMessage,
-      type: "system", // Use 'system' as it's in the enum
-      isRead: false,
-    }));
 
     if (notifications.length > 0) {
       await Notification.insertMany(notifications);
     }
 
+    // Get counts for response
+    let userCount = 0;
+    let businessCount = 0;
+    if (targetAudience === "all" || targetAudience === "users") {
+      userCount = await Users.countDocuments({ role: "user" });
+    }
+    if (targetAudience === "all" || targetAudience === "owners") {
+      businessCount = await Business.countDocuments();
+    }
+
     res.status(201).json({
       status: "success",
-      message: `Announcement sent to ${notifications.length} users`,
-      announcement: { title, message, targetAudience, recipientCount: notifications.length },
+      message: `Announcement sent to ${notifications.length} recipients (${userCount} users, ${businessCount} businesses)`,
+      announcement: { 
+        title, 
+        message, 
+        targetAudience, 
+        recipientCount: notifications.length,
+        userCount,
+        businessCount
+      },
     });
   } catch (err) {
     console.error("Announcement error:", err);

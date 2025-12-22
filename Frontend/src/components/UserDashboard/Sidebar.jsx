@@ -1,13 +1,16 @@
 "use client";
 import { API_URL, authFetch } from '@/lib/api';
 
+import LanguageSwitcher from '@/components/LanguageSwitcher';
+import NotificationBell from '@/components/NotificationBell';
+import ThemeToggle from '@/components/ThemeToggle';
 import { BiLogOut } from "react-icons/bi";
 import { BsTicketPerforatedFill } from "react-icons/bs";
 import { FaCalendarAlt, FaCreditCard, FaSearch, FaTimes, FaUser } from "react-icons/fa";
 import { MdReviews } from 'react-icons/md';
 import { SiGoogleanalytics } from "react-icons/si";
 
-export default function Sidebar({ t, activeTab, setActiveTab, isSidebarOpen, setIsSidebarOpen }) {
+export default function Sidebar({ t, activeTab, setActiveTab, isSidebarOpen, setIsSidebarOpen, userData }) {
   const navItems = [
     { id: "dashboard", label: t('userDashboard.tabs.dashboard'), icon: <SiGoogleanalytics /> },
     { id: "findBusiness", label: t('common.search'), icon: <FaSearch /> },
@@ -17,6 +20,13 @@ export default function Sidebar({ t, activeTab, setActiveTab, isSidebarOpen, set
     { id: "reviews", label: t('userDashboard.tabs.reviews'), icon: <MdReviews /> },
     { id: "payments", label: t('userDashboard.tabs.payments'), icon: <FaCreditCard /> }
   ];
+
+  // Helper to handle both Cloudinary URLs and relative paths
+  const getImageUrl = (imagePath) => {
+    if (!imagePath) return null;
+    if (imagePath.startsWith('http')) return imagePath;
+    return `${API_URL}${imagePath.startsWith('/') ? '' : '/'}${imagePath}`;
+  };
 
   return (
     <>
@@ -30,17 +40,50 @@ export default function Sidebar({ t, activeTab, setActiveTab, isSidebarOpen, set
 
       {/* Sidebar */}
       <aside className={`
-        fixed lg:sticky top-0 left-0 z-50 h-screen w-72
+        fixed lg:sticky top-0 start-0 z-50 h-screen w-72
         bg-white dark:bg-gradient-to-b dark:from-gray-900 dark:to-gray-950 
         shadow-2xl transition-transform duration-300 ease-in-out 
-        border-r border-gray-200 dark:border-gray-800/50
-        ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
+        border-e border-gray-200 dark:border-gray-800/50
+        ${isSidebarOpen ? 'translate-x-0 rtl:-translate-x-0' : '-translate-x-full rtl:translate-x-full lg:translate-x-0 lg:rtl:-translate-x-0'}
       `}>
         <div className="flex flex-col h-full">
           {/* Header Area */}
-          <div className="p-6 flex items-center justify-between border-b border-gray-200 dark:border-gray-800/50">
-            <div></div>
-            <button onClick={() => setIsSidebarOpen(false)} className="lg:hidden text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-white transition-colors">
+          <div className="p-6 border-b border-gray-200 dark:border-gray-800/50 relative">
+            <div className="flex items-center gap-3">
+              {userData?.profileImage ? (
+                <img 
+                  src={getImageUrl(userData.profileImage)} 
+                  alt={userData.name} 
+                  className="w-10 h-10 rounded-lg object-cover border border-gray-200 dark:border-gray-700 bg-white"
+                />
+              ) : (
+                <div className="w-10 h-10 rounded-lg bg-emerald-500/10 flex items-center justify-center border border-emerald-500/20">
+                   <span className="text-emerald-600 font-bold text-lg">{userData?.name?.charAt(0) || 'U'}</span>
+                </div>
+              )}
+              <div className="min-w-0">
+                  <h2 className="font-bold text-gray-900 dark:text-white truncate max-w-[170px] leading-tight">
+                      {userData?.name || 'User'}
+                  </h2>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 truncate max-w-[170px]">
+                      {userData?.email || t('userDashboard.tabs.dashboard')}
+                  </p>
+              </div>
+            </div>
+            
+            <div className="mt-4 flex gap-2 items-center justify-between w-full">
+                 <div className="flex-1">
+                    <LanguageSwitcher position="left" />
+                 </div>
+                 <div>
+                    <NotificationBell position="left" />
+                 </div>
+                 <div>
+                    <ThemeToggle />
+                 </div>
+            </div>
+
+            <button onClick={() => setIsSidebarOpen(false)} className="lg:hidden absolute top-6 end-6 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-white transition-colors">
               <FaTimes size={20} />
             </button>
           </div>
@@ -68,7 +111,7 @@ export default function Sidebar({ t, activeTab, setActiveTab, isSidebarOpen, set
                 </span>
                 <span className="font-medium">{item.label}</span>
                 {activeTab === item.id && (
-                  <div className="ml-auto w-2 h-2 rounded-full bg-white/50" />
+                  <div className="ms-auto w-2 h-2 rounded-full bg-white/50" />
                 )}
               </button>
             ))}
@@ -98,7 +141,7 @@ export default function Sidebar({ t, activeTab, setActiveTab, isSidebarOpen, set
               }}
               className="w-full flex items-center gap-3 px-4 py-3.5 rounded-xl text-red-500 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 border border-transparent hover:border-red-200 dark:hover:border-red-500/30 transition-all group"
             >
-              <span className="text-xl group-hover:-translate-x-1 transition-transform"><BiLogOut /></span>
+              <span className="text-xl group-hover:-translate-x-1 rtl:group-hover:translate-x-1 transition-transform"><BiLogOut /></span>
               <span className="font-medium">{t('nav.logout')}</span>
             </button>
           </div>
@@ -107,6 +150,3 @@ export default function Sidebar({ t, activeTab, setActiveTab, isSidebarOpen, set
     </>
   );
 }
-
-
-

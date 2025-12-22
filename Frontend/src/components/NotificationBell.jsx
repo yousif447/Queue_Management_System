@@ -27,13 +27,13 @@ export default function NotificationBell({ position = 'right' }) {
 
   const getIcon = (type) => {
     const icons = {
-      'queue': <MapPin size={18} className="text-blue-500" />,
-      'position': <MapPin size={18} className="text-purple-500" />,
-      'turn': <CheckCircle size={18} className="text-emerald-500" />,
-      'reminder': <Clock size={18} className="text-amber-500" />,
-      'payment': <CreditCard size={18} className="text-pink-500" />,
+      'queue': <MapPin size={16} className="text-blue-500" />,
+      'position': <MapPin size={16} className="text-purple-500" />,
+      'turn': <CheckCircle size={16} className="text-emerald-500" />,
+      'reminder': <Clock size={16} className="text-amber-500" />,
+      'payment': <CreditCard size={16} className="text-pink-500" />,
     };
-    return icons[type] || <Bell size={18} className="text-gray-500" />;
+    return icons[type] || <Bell size={16} className="text-gray-500" />;
   };
 
   const formatTime = (timestamp) => {
@@ -53,10 +53,10 @@ export default function NotificationBell({ position = 'right' }) {
   const getDropdownClasses = () => {
     if (position === 'left') {
       // For sidebar - position to the right of the bell, use fixed on mobile
-      return 'fixed inset-4 sm:absolute sm:inset-auto sm:left-0 sm:top-full sm:mt-2 sm:w-80 lg:w-96';
+      return 'fixed inset-4 sm:absolute sm:inset-auto sm:start-0 sm:top-full sm:mt-2 sm:w-80 lg:w-96';
     }
     // Default right position for navbar
-    return 'fixed inset-4 sm:absolute sm:inset-auto sm:right-0 sm:top-full sm:mt-2 sm:w-80 lg:w-96';
+    return 'fixed inset-4 sm:absolute sm:inset-auto sm:end-0 sm:top-full sm:mt-2 sm:w-80 lg:w-96';
   };
 
   return (
@@ -69,7 +69,7 @@ export default function NotificationBell({ position = 'right' }) {
       >
         <Bell size={20} className="text-gray-600 dark:text-gray-400" />
         {unreadCount > 0 && (
-          <span className="absolute -top-1 -right-1 bg-gradient-to-r from-red-500 to-rose-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center shadow-lg shadow-red-500/50 animate-pulse">
+          <span className="absolute -top-1 -end-1 bg-gradient-to-r from-red-500 to-rose-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center shadow-lg shadow-red-500/50 animate-pulse">
             {unreadCount > 9 ? '9+' : unreadCount}
           </span>
         )}
@@ -81,21 +81,21 @@ export default function NotificationBell({ position = 'right' }) {
           <div className="fixed inset-0 z-40 bg-black/30" onClick={() => setIsOpen(false)} />
           <div className={`${getDropdownClasses()} max-h-[80vh] sm:max-h-[500px] bg-white dark:bg-gray-900 rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-700/50 z-50 overflow-hidden flex flex-col animate-fade-in-scale`}>
             {/* Header */}
-            <div className="flex items-center justify-between p-4 border-b border-gray-100 dark:border-gray-800 bg-gradient-to-r from-gray-50 to-white dark:from-gray-800 dark:to-gray-900">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center shadow-lg shadow-emerald-500/25">
-                  <Bell size={18} className="text-white" />
+            <div className="flex items-center justify-between p-3 sm:p-4 border-b border-gray-100 dark:border-gray-800 bg-gradient-to-r from-gray-50 to-white dark:from-gray-800 dark:to-gray-900 gap-2">
+              <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
+                <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center shadow-lg shadow-emerald-500/25 flex-shrink-0">
+                  <Bell size={16} className="text-white" />
                 </div>
-                <div>
-                  <h3 className="font-bold text-gray-900 dark:text-white">{t('notificationBell.title') || 'Notifications'}</h3>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">{unreadCount} {t('notificationBell.unread') || 'unread'}</p>
+                <div className="min-w-0 flex-1">
+                  <h3 className="font-bold text-gray-900 dark:text-white text-sm sm:text-base truncate">{t('notificationBell.title') || 'Notifications'}</h3>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{unreadCount} {t('notificationBell.unread') || 'unread'}</p>
                 </div>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
                 {notifications.length > 0 && (
                   <button
                     onClick={(e) => { e.stopPropagation(); clearNotifications(); }}
-                    className="text-xs text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 dark:hover:text-emerald-300 font-medium px-3 py-1.5 rounded-lg hover:bg-emerald-50 dark:hover:bg-emerald-500/10 transition-colors"
+                    className="text-xs text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 dark:hover:text-emerald-300 font-medium px-2 sm:px-3 py-1.5 rounded-lg hover:bg-emerald-50 dark:hover:bg-emerald-500/10 transition-colors whitespace-nowrap"
                   >
                     {t('notificationBell.clearAll') || 'Clear all'}
                   </button>
@@ -103,9 +103,9 @@ export default function NotificationBell({ position = 'right' }) {
                 {/* Close button */}
                 <button
                   onClick={() => setIsOpen(false)}
-                  className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+                  className="p-1.5 sm:p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors flex-shrink-0"
                 >
-                  <X size={18} className="text-gray-500 dark:text-gray-400" />
+                  <X size={16} className="text-gray-500 dark:text-gray-400" />
                 </button>
               </div>
             </div>
@@ -113,11 +113,11 @@ export default function NotificationBell({ position = 'right' }) {
             {/* Notifications List */}
             <div className="overflow-y-auto flex-1 scrollbar-thin">
               {notifications.length === 0 ? (
-                <div className="p-10 text-center">
-                  <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
-                    <Bell size={32} className="text-gray-300 dark:text-gray-600" />
+                <div className="p-6 sm:p-10 text-center">
+                  <div className="w-12 h-12 sm:w-16 sm:h-16 mx-auto mb-3 sm:mb-4 rounded-2xl bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
+                    <Bell size={24} className="text-gray-300 dark:text-gray-600" />
                   </div>
-                  <p className="text-gray-600 dark:text-gray-400 font-medium">{t('notificationBell.empty') || 'No notifications'}</p>
+                  <p className="text-gray-600 dark:text-gray-400 font-medium text-sm sm:text-base">{t('notificationBell.empty') || 'No notifications'}</p>
                   <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">{t('notificationBell.emptyDesc') || "You're all caught up!"}</p>
                 </div>
               ) : (
@@ -126,23 +126,23 @@ export default function NotificationBell({ position = 'right' }) {
                     <div
                       key={notification.id}
                       onClick={() => markAsRead(notification.id)}
-                      className={`p-4 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors group relative cursor-pointer ${
-                        !notification.isRead ? 'bg-emerald-50/50 dark:bg-emerald-500/5 border-l-4 border-emerald-500' : ''
+                      className={`p-3 sm:p-4 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors group relative cursor-pointer ${
+                        !notification.isRead ? 'bg-emerald-50/50 dark:bg-emerald-500/5 border-s-4 border-emerald-500' : ''
                       }`}
                     >
                       <button
                         onClick={(e) => { e.stopPropagation(); removeNotification(notification.id); }}
-                        className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity p-1.5 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg"
+                        className="absolute top-2 end-2 opacity-0 group-hover:opacity-100 transition-opacity p-1.5 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg"
                       >
                         <X size={14} className="text-gray-500 dark:text-gray-400" />
                       </button>
 
-                      <div className="flex gap-3">
-                        <div className="flex-shrink-0 w-9 h-9 rounded-lg bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
+                      <div className="flex gap-2 sm:gap-3">
+                        <div className="flex-shrink-0 w-8 h-8 sm:w-9 sm:h-9 rounded-lg bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
                           {getIcon(notification.type)}
                         </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm text-gray-900 dark:text-white font-medium mb-1">{notification.message || 'New notification'}</p>
+                        <div className="flex-1 min-w-0 pe-6">
+                          <p className="text-sm text-gray-900 dark:text-white font-medium mb-1 break-words leading-relaxed">{notification.message || 'New notification'}</p>
                           <p className="text-xs text-gray-500 dark:text-gray-400">{formatTime(notification.timestamp)}</p>
                         </div>
                       </div>

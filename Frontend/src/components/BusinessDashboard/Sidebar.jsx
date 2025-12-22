@@ -60,7 +60,7 @@ export default function Sidebar({ t, navItems, activeTab, setActiveTab, isSideba
             
             <div className="mt-4 flex gap-2 items-center justify-between w-full">
                  <div className="flex-1">
-                    <LanguageSwitcher />
+                    <LanguageSwitcher position="left" />
                  </div>
                  <div>
                     <NotificationBell position="left" />
